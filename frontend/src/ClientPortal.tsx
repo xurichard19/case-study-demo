@@ -66,7 +66,7 @@ function ClientPortal({ onLogout }: ClientPortalProps) {
 
       try {
         setIsLoading(true)
-        setOrders(await getOrders(selectedClientId))
+        setOrders(await getOrders({ clientAccountId: selectedClientId }))
         setError(null)
       } catch (requestError) {
         setError(requestError instanceof Error ? requestError.message : 'Unable to load orders')

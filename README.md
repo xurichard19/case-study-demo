@@ -47,21 +47,8 @@ docker compose build backend
 docker compose up -d backend
 ```
 
-Verify the backend is running:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
 Seed Supabase from the CSV:
 
 ```bash
 docker compose run --rm backend python scripts/seed_from_csv.py
-```
-
-View logs or stop the backend:
-
-```bash
-docker compose logs -f backend
-docker compose down
 ```

@@ -6,17 +6,28 @@ import Dashboard from './Dashboard'
 import DispatcherLogin from './DispatcherLogin'
 import Home from './Home'
 
-type View = 'home' | 'dispatcher-login' | 'client-login' | 'dispatcher-dashboard' | 'client-portal'
+type View =
+  | 'home'
+  | 'dispatcher-login'
+  | 'client-login'
+  | 'dispatcher-dashboard'
+  | 'dispatcher-past-orders'
+  | 'client-portal'
 
 const viewPaths: Record<View, string> = {
   home: '/',
   'dispatcher-login': '/dispatcher/login',
   'client-login': '/client/login',
-  'dispatcher-dashboard': '/dispatcher/dashboard',
+  'dispatcher-dashboard': '/dispatcher/current-orders',
+  'dispatcher-past-orders': '/dispatcher/past-orders',
   'client-portal': '/client/orders',
 }
 
 function getViewFromPath(pathname: string): View {
+  if (pathname === '/dispatcher/dashboard') {
+    return 'dispatcher-dashboard'
+  }
+
   const matchedView = Object.entries(viewPaths).find(([, path]) => path === pathname)
 
   return matchedView ? (matchedView[0] as View) : 'home'
@@ -40,7 +51,25 @@ function App() {
   }, [])
 
   if (view === 'dispatcher-dashboard') {
-    return <Dashboard onLogout={() => navigate('home')} />
+    return (
+      <Dashboard
+        mode="current"
+        onLogout={() => navigate('home')}
+        onSelectCurrent={() => navigate('dispatcher-dashboard')}
+        onSelectPast={() => navigate('dispatcher-past-orders')}
+      />
+    )
+  }
+
+  if (view === 'dispatcher-past-orders') {
+    return (
+      <Dashboard
+        mode="past"
+        onLogout={() => navigate('home')}
+        onSelectCurrent={() => navigate('dispatcher-dashboard')}
+        onSelectPast={() => navigate('dispatcher-past-orders')}
+      />
+    )
   }
 
   if (view === 'dispatcher-login') {

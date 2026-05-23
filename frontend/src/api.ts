@@ -33,6 +33,14 @@ export type ApiOrder = {
   status: string
 }
 
+type GetOrdersOptions = {
+  beforeTime?: string
+  clientAccountId?: string
+  fromTime?: string
+  limit?: number
+  offset?: number
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`)
 
@@ -51,7 +59,25 @@ export function getDrivers() {
   return getJson<Driver[]>('/api/drivers')
 }
 
-export function getOrders(clientAccountId?: string) {
-  const params = clientAccountId ? `?client_account_id=${encodeURIComponent(clientAccountId)}` : ''
-  return getJson<ApiOrder[]>(`/api/orders${params}`)
+export function getOrders(options: GetOrdersOptions = {}) {
+  const params = new URLSearchParams()
+
+  if (options.clientAccountId) {
+    params.set('client_account_id', options.clientAccountId)
+  }
+  if (options.fromTime) {
+    params.set('from_time', options.fromTime)
+  }
+  if (options.beforeTime) {
+    params.set('before_time', options.beforeTime)
+  }
+  if (options.limit) {
+    params.set('limit', String(options.limit))
+  }
+  if (options.offset) {
+    params.set('offset', String(options.offset))
+  }
+
+  const query = params.toString()
+  return getJson<ApiOrder[]>(`/api/orders${query ? `?${query}` : ''}`)
 }

@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getClients, getDrivers, getOrders, type ApiOrder, type ClientAccount, type Driver } from './api'
 
+const DEMO_DATE = '2025-03-25T00:00:00'
+const PAST_PAGE_SIZE = 100
+
 type DashboardProps = {
+  mode: 'current' | 'past'
   onLogout: () => void
+  onSelectCurrent: () => void
+  onSelectPast: () => void
 }
 
 function formatDate(value: string | null) {
@@ -48,23 +54,60 @@ function severity(order: ApiOrder) {
   return 'Low'
 }
 
-function Dashboard({ onLogout }: DashboardProps) {
+function priorityScore(order: ApiOrder) {
+  const label = statusLabel(order)
+  const orderSeverity = severity(order)
+  const service = order.service_type?.toLowerCase() ?? ''
+
+  let score = 0
+  if (label === 'Unassigned') score += 100
+  if (label === 'Delayed') score += 80
+  if (label === 'At risk') score += 50
+  if (orderSeverity === 'High') score += 35
+  if (orderSeverity === 'Medium') score += 15
+  if (service.includes('stat')) score += 25
+  if (service.includes('rush')) score += 18
+  if (order.redelivery_flag) score += 30
+
+  return score
+}
+
+function sortCurrentOrders(orders: ApiOrder[]) {
+  return [...orders].sort((first, second) => {
+    const priorityDifference = priorityScore(second) - priorityScore(first)
+
+    if (priorityDifference !== 0) {
+      return priorityDifference
+    }
+
+    return new Date(second.order_time ?? 0).getTime() - new Date(first.order_time ?? 0).getTime()
+  })
+}
+
+function Dashboard({ mode, onLogout, onSelectCurrent, onSelectPast }: DashboardProps) {
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [clients, setClients] = useState<ClientAccount[]>([])
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [pastPage, setPastPage] = useState(0)
 
   useEffect(() => {
     async function loadDashboard() {
       try {
         setIsLoading(true)
         const [ordersData, clientsData, driversData] = await Promise.all([
-          getOrders(),
+          getOrders({
+            beforeTime: mode === 'past' ? DEMO_DATE : undefined,
+            fromTime: mode === 'current' ? DEMO_DATE : undefined,
+            limit: mode === 'past' ? PAST_PAGE_SIZE : 1000,
+            offset: mode === 'past' ? pastPage * PAST_PAGE_SIZE : 0,
+          }),
           getClients(),
           getDrivers(),
         ])
-        setOrders(ordersData)
+        setOrders(mode === 'current' ? sortCurrentOrders(ordersData) : ordersData)
         setClients(clientsData)
         setDrivers(driversData)
         setError(null)
@@ -76,7 +119,7 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
 
     loadDashboard()
-  }, [])
+  }, [mode, pastPage])
 
   const atRiskCount = useMemo(
     () => orders.filter((order) => statusLabel(order) === 'At risk').length,
@@ -86,6 +129,8 @@ function Dashboard({ onLogout }: DashboardProps) {
     () => orders.filter((order) => statusLabel(order) === 'Unassigned').length,
     [orders],
   )
+  const title = mode === 'current' ? 'Current orders' : 'Past orders'
+  const hasNextPastPage = mode === 'past' && orders.length === PAST_PAGE_SIZE
 
   return (
     <main className="dashboard-page">
@@ -98,27 +143,46 @@ function Dashboard({ onLogout }: DashboardProps) {
           <button type="button" className="logout-button" onClick={onLogout}>
             Log out
           </button>
-          <button type="button" className="menu-button" aria-label="Open menu">
-            <span />
-            <span />
-            <span />
-          </button>
+          <div className="dashboard-menu">
+            <button
+              type="button"
+              className="menu-button"
+              aria-expanded={isMenuOpen}
+              aria-label="Open menu"
+              onClick={() => setIsMenuOpen((open) => !open)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+            {isMenuOpen && (
+              <div className="menu-popover" aria-label="Dispatcher pages">
+                <button type="button" onClick={onSelectCurrent}>
+                  Current orders
+                </button>
+                <button type="button" onClick={onSelectPast}>
+                  Past orders
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
       <section className="dashboard-header" aria-labelledby="dashboard-title">
         <div>
-          <p className="eyebrow">Dispatch control</p>
-          <h1 id="dashboard-title">Orders dashboard</h1>
+          <p className="eyebrow">Demo date: Mar 15, 2025</p>
+          <h1 id="dashboard-title">{title}</h1>
           <p>
-            Live operational view for exception triage, status calls, reporting,
-            and driver matching.
+            {mode === 'current'
+              ? 'Orders on or after the demo date, ranked by dispatch priority.'
+              : 'Orders before the demo date, sorted by order time.'}
           </p>
         </div>
         <div className="summary-grid" aria-label="Order summary">
           <article>
             <span>{orders.length}</span>
-            <p>Total orders</p>
+            <p>{mode === 'past' ? 'This page' : 'Current orders'}</p>
           </article>
           <article>
             <span>{atRiskCount}</span>
@@ -133,10 +197,23 @@ function Dashboard({ onLogout }: DashboardProps) {
 
       <section className="orders-section" aria-labelledby="orders-title">
         <div className="section-heading">
-          <h2 id="orders-title">All orders</h2>
-          <p>
-            {clients.length} clients · {drivers.length} drivers
-          </p>
+          <div>
+            <h2 id="orders-title">{title}</h2>
+            <p>
+              {clients.length} clients · {drivers.length} drivers
+            </p>
+          </div>
+          {mode === 'past' && (
+            <div className="pagination-controls" aria-label="Past orders pagination">
+              <button type="button" disabled={pastPage === 0} onClick={() => setPastPage((page) => page - 1)}>
+                Previous
+              </button>
+              <span>Page {pastPage + 1}</span>
+              <button type="button" disabled={!hasNextPastPage} onClick={() => setPastPage((page) => page + 1)}>
+                Next
+              </button>
+            </div>
+          )}
         </div>
 
         {isLoading && <p className="state-message">Loading dispatch data...</p>}

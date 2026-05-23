@@ -27,12 +27,19 @@ def _format_order(row: dict) -> dict:
 @router.get("", response_model=list[Order])
 def list_orders(
     client_account_id: str | None = Query(default=None),
-    limit: int = Query(default=100, ge=1, le=500),
+    from_time: str | None = Query(default=None),
+    before_time: str | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
 ) -> list[dict]:
-    query = _order_query().limit(limit)
+    query = _order_query().range(offset, offset + limit - 1)
 
     if client_account_id:
         query = query.eq("client_account_id", client_account_id)
+    if from_time:
+        query = query.gte("order_time", from_time)
+    if before_time:
+        query = query.lt("order_time", before_time)
 
     try:
         response = query.execute()
