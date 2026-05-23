@@ -1,11 +1,11 @@
 # Dispatch Case Study
 
 This is a demo implementation of the case study that uses a FastAPI + React/Vite stack with Pandas and SQLite for lightweight data analytics.
-I focus on four high-impact workflows from the case study: exception severity triage, customer status, automated weekly reporting, and driver matching support. I use deterministic analytics to produce metrics and recommendations, and use the OpenAI API for natural language reports. Codex 5.5 was my tool of choice for rapid prototyping, but I manually planned and designed the architecture of this application.
+I focus on four high-impact workflows from the case study: exception severity triage, customer status, automated weekly reporting, and driver matching support. I use deterministic analytics to produce metrics and recommendations, and use the OpenAI API for natural language reports. Codex 5.5 was my tool of choice for rapid feature shipping, but I manually planned and designed the architecture of this application.
 
 Before implementation, I first identified key user needs and map each to a potential solution, then prioritized based on explicit requests and operational impact.
 
-It should be noted that the exception triage and live status reports are not totally feasible to implement due to the lack of live exception data and GPS pings in the given CSV. [solution]
+It should be noted that the exception triage and live status reports are not totally feasible to implement due to the lack of live exception data and GPS pings in the given CSV. However, we can simulate live exception info with the provided CSV and implement the base status report infrastructure.
 
 ---
 
