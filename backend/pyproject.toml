@@ -1,0 +1,16 @@
+[project]
+name = "dispatch-case-study-backend"
+version = "0.1.0"
+description = "FastAPI backend for the dispatch case study."
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.124.0",
+  "supabase==2.30.0",
+  "uvicorn[standard]>=0.38.0",
+]
+
+[tool.pyright]
+pythonVersion = "3.12"
+
+[tool.ruff]
+line-length = 100
