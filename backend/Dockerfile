@@ -5,10 +5,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY pyproject.toml ./
+COPY backend/pyproject.toml ./
 RUN pip install --no-cache-dir .
 
-COPY . .
+COPY backend/ ./
+COPY dispatch_log_q1.csv ./dispatch_log_q1.csv
 
 EXPOSE 8000
 

@@ -7,6 +7,7 @@ This directory contains database migrations for the dispatch case study.
 - `profiles`: app profile for each Supabase Auth user, including `client` or `dispatcher` role.
 - `client_accounts`: customer organizations such as hospitals, labs, and medical centers.
 - `client_account_users`: many-to-many membership between client users and client accounts.
+- `drivers`: dispatcher-visible driver records.
 - `orders`: dispatch order records scoped to a client account.
 
 ## Access Model

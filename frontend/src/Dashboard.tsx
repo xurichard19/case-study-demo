@@ -1,129 +1,92 @@
+import { useEffect, useMemo, useState } from 'react'
+import { getClients, getDrivers, getOrders, type ApiOrder, type ClientAccount, type Driver } from './api'
+
 type DashboardProps = {
   onLogout: () => void
 }
 
-type Order = {
-  id: string
-  time: string
-  client: string
-  service: string
-  driver: string
-  pickup: string
-  delivery: string
-  promisedEta: string
-  status: 'On time' | 'At risk' | 'Delayed' | 'Unassigned'
-  exception: string
-  severity: 'Low' | 'Medium' | 'High'
+function formatDate(value: string | null) {
+  if (!value) {
+    return 'Not set'
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value))
 }
 
-const orders: Order[] = [
-  {
-    id: 'ORD-25000',
-    time: 'Mar 24, 6:47 AM',
-    client: 'Lowell General',
-    service: 'Routine',
-    driver: 'D035',
-    pickup: '02030',
-    delivery: '02120',
-    promisedEta: '10:46 AM',
-    status: 'At risk',
-    exception: 'Traffic delay on I-93',
-    severity: 'Medium',
-  },
-  {
-    id: 'ORD-25001',
-    time: 'Mar 12, 10:28 AM',
-    client: "Brigham & Women's",
-    service: 'Routine',
-    driver: 'D022',
-    pickup: '02177',
-    delivery: '02101',
-    promisedEta: '1:51 PM',
-    status: 'On time',
-    exception: 'Client callback pending',
-    severity: 'Low',
-  },
-  {
-    id: 'ORD-25002',
-    time: 'Mar 1, 12:59 PM',
-    client: "St. Elizabeth's Medical",
-    service: 'Routine',
-    driver: 'D024',
-    pickup: '02125',
-    delivery: '02142',
-    promisedEta: '5:13 PM',
-    status: 'On time',
-    exception: 'None logged',
-    severity: 'Low',
-  },
-  {
-    id: 'ORD-25003',
-    time: 'Mar 1, 1:23 PM',
-    client: 'South Shore Hospital',
-    service: 'Routine',
-    driver: 'D005',
-    pickup: '02066',
-    delivery: '02130',
-    promisedEta: '6:21 PM',
-    status: 'On time',
-    exception: 'None logged',
-    severity: 'Low',
-  },
-  {
-    id: 'ORD-25004',
-    time: 'Feb 12, 5:49 PM',
-    client: 'Labcorp Inc',
-    service: 'Routine',
-    driver: 'D014',
-    pickup: '02184',
-    delivery: '02105',
-    promisedEta: '11:33 PM',
-    status: 'At risk',
-    exception: 'Hospital parking issue',
-    severity: 'Medium',
-  },
-  {
-    id: 'ORD-25005',
-    time: 'Feb 4, 3:27 PM',
-    client: 'Boston Med Ctr',
-    service: 'STAT',
-    driver: 'D006',
-    pickup: '02103',
-    delivery: '02153',
-    promisedEta: '4:10 PM',
-    status: 'Delayed',
-    exception: 'Redelivery needed',
-    severity: 'High',
-  },
-  {
-    id: 'ORD-25006',
-    time: 'Feb 3, 9:55 PM',
-    client: 'BioReference Labs',
-    service: 'STAT',
-    driver: 'D022',
-    pickup: '02143',
-    delivery: '02060',
-    promisedEta: '10:48 PM',
-    status: 'At risk',
-    exception: 'Pickup scan missing',
-    severity: 'Medium',
-  },
-  {
-    id: 'ORD-25007',
-    time: 'Jan 29, 8:12 AM',
-    client: 'Mass General',
-    service: 'STAT',
-    driver: 'Unassigned',
-    pickup: '02114',
-    delivery: '02139',
-    promisedEta: '9:05 AM',
-    status: 'Unassigned',
-    exception: 'Needs driver match',
-    severity: 'High',
-  },
-]
+function statusLabel(order: ApiOrder) {
+  if (!order.driver_id) {
+    return 'Unassigned'
+  }
+
+  if (order.status === 'delayed' || order.on_time === false) {
+    return 'Delayed'
+  }
+
+  if (order.exception_notes) {
+    return 'At risk'
+  }
+
+  return 'On time'
+}
+
+function severity(order: ApiOrder) {
+  const notes = order.exception_notes?.toLowerCase() ?? ''
+
+  if (order.redelivery_flag || notes.includes('redelivery') || order.status === 'delayed') {
+    return 'High'
+  }
+
+  if (notes) {
+    return 'Medium'
+  }
+
+  return 'Low'
+}
 
 function Dashboard({ onLogout }: DashboardProps) {
+  const [orders, setOrders] = useState<ApiOrder[]>([])
+  const [clients, setClients] = useState<ClientAccount[]>([])
+  const [drivers, setDrivers] = useState<Driver[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        setIsLoading(true)
+        const [ordersData, clientsData, driversData] = await Promise.all([
+          getOrders(),
+          getClients(),
+          getDrivers(),
+        ])
+        setOrders(ordersData)
+        setClients(clientsData)
+        setDrivers(driversData)
+        setError(null)
+      } catch (requestError) {
+        setError(requestError instanceof Error ? requestError.message : 'Unable to load dashboard')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadDashboard()
+  }, [])
+
+  const atRiskCount = useMemo(
+    () => orders.filter((order) => statusLabel(order) === 'At risk').length,
+    [orders],
+  )
+  const unassignedCount = useMemo(
+    () => orders.filter((order) => statusLabel(order) === 'Unassigned').length,
+    [orders],
+  )
+
   return (
     <main className="dashboard-page">
       <nav className="top-nav dashboard-nav" aria-label="Dashboard navigation">
@@ -148,8 +111,8 @@ function Dashboard({ onLogout }: DashboardProps) {
           <p className="eyebrow">Dispatch control</p>
           <h1 id="dashboard-title">Orders dashboard</h1>
           <p>
-            Placeholder operational view for exception triage, status calls,
-            reporting, and driver matching.
+            Live operational view for exception triage, status calls, reporting,
+            and driver matching.
           </p>
         </div>
         <div className="summary-grid" aria-label="Order summary">
@@ -158,11 +121,11 @@ function Dashboard({ onLogout }: DashboardProps) {
             <p>Total orders</p>
           </article>
           <article>
-            <span>{orders.filter((order) => order.status === 'At risk').length}</span>
+            <span>{atRiskCount}</span>
             <p>At risk</p>
           </article>
           <article>
-            <span>{orders.filter((order) => order.status === 'Unassigned').length}</span>
+            <span>{unassignedCount}</span>
             <p>Unassigned</p>
           </article>
         </div>
@@ -171,53 +134,65 @@ function Dashboard({ onLogout }: DashboardProps) {
       <section className="orders-section" aria-labelledby="orders-title">
         <div className="section-heading">
           <h2 id="orders-title">All orders</h2>
-          <p>Static sample rows, ready for backend or CSV wiring later.</p>
+          <p>
+            {clients.length} clients · {drivers.length} drivers
+          </p>
         </div>
 
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Client</th>
-                <th>Service</th>
-                <th>Driver</th>
-                <th>Route</th>
-                <th>ETA</th>
-                <th>Status</th>
-                <th>Exception</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order.id}>
-                  <td>
-                    <strong>{order.id}</strong>
-                    <span>{order.time}</span>
-                  </td>
-                  <td>{order.client}</td>
-                  <td>{order.service}</td>
-                  <td>{order.driver}</td>
-                  <td>
-                    {order.pickup} {'->'} {order.delivery}
-                  </td>
-                  <td>{order.promisedEta}</td>
-                  <td>
-                    <span className={`status-pill ${order.status.toLowerCase().replace(' ', '-')}`}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td>
-                    <strong className={`severity severity-${order.severity.toLowerCase()}`}>
-                      {order.severity}
-                    </strong>
-                    <span>{order.exception}</span>
-                  </td>
+        {isLoading && <p className="state-message">Loading dispatch data...</p>}
+        {error && <p className="state-message error-message">{error}</p>}
+
+        {!isLoading && !error && (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Client</th>
+                  <th>Service</th>
+                  <th>Driver</th>
+                  <th>Route</th>
+                  <th>ETA</th>
+                  <th>Status</th>
+                  <th>Exception</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {orders.map((order) => {
+                  const orderStatus = statusLabel(order)
+                  const orderSeverity = severity(order)
+
+                  return (
+                    <tr key={order.id}>
+                      <td>
+                        <strong>{order.id}</strong>
+                        <span>{formatDate(order.order_time)}</span>
+                      </td>
+                      <td>{order.client_name}</td>
+                      <td>{order.service_type ?? 'Unknown'}</td>
+                      <td>{order.driver_id ?? 'Unassigned'}</td>
+                      <td>
+                        {order.pickup_zip ?? '----'} {'->'} {order.delivery_zip ?? '----'}
+                      </td>
+                      <td>{formatDate(order.promised_eta)}</td>
+                      <td>
+                        <span className={`status-pill ${orderStatus.toLowerCase().replace(' ', '-')}`}>
+                          {orderStatus}
+                        </span>
+                      </td>
+                      <td>
+                        <strong className={`severity severity-${orderSeverity.toLowerCase()}`}>
+                          {orderSeverity}
+                        </strong>
+                        <span>{order.exception_notes ?? 'None logged'}</span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </main>
   )

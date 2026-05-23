@@ -1,22 +1,22 @@
 from fastapi import APIRouter
 from postgrest.exceptions import APIError
 
-from model import Driver
+from model import ClientAccount
 from routers.errors import supabase_error
 from supabase_client import get_supabase_client
 
 
-router = APIRouter(prefix="/api/drivers", tags=["drivers"])
+router = APIRouter(prefix="/api/clients", tags=["clients"])
 
 
-@router.get("", response_model=list[Driver])
-def list_drivers() -> list[dict]:
+@router.get("", response_model=list[ClientAccount])
+def list_clients() -> list[dict]:
     try:
         response = (
             get_supabase_client()
-            .table("drivers")
+            .table("client_accounts")
             .select("*")
-            .order("id")
+            .order("name")
             .execute()
         )
     except APIError as error:

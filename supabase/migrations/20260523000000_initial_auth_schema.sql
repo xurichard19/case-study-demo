@@ -26,6 +26,14 @@ create table public.client_account_users (
   primary key (user_id, client_account_id)
 );
 
+create table public.drivers (
+  id text primary key,
+  display_name text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table public.orders (
   id text primary key,
   client_account_id uuid not null references public.client_accounts (id),
@@ -60,6 +68,9 @@ create index orders_client_account_id_idx
 create index orders_status_idx
   on public.orders (status);
 
+create index drivers_active_idx
+  on public.drivers (active);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -80,6 +91,10 @@ for each row execute function public.set_updated_at();
 
 create trigger orders_set_updated_at
 before update on public.orders
+for each row execute function public.set_updated_at();
+
+create trigger drivers_set_updated_at
+before update on public.drivers
 for each row execute function public.set_updated_at();
 
 create or replace function public.current_user_role()
@@ -147,7 +162,7 @@ security definer
 set search_path = public
 as $$
 begin
-  if old.role <> new.role and not public.is_dispatcher() then
+  if old.role <> new.role and auth.uid() is not null and not public.is_dispatcher() then
     raise exception 'Only dispatchers can change profile roles.';
   end if;
 
@@ -162,12 +177,14 @@ for each row execute function public.prevent_client_role_change();
 alter table public.profiles enable row level security;
 alter table public.client_accounts enable row level security;
 alter table public.client_account_users enable row level security;
+alter table public.drivers enable row level security;
 alter table public.orders enable row level security;
 
 grant usage on schema public to authenticated;
 grant all on public.profiles to authenticated;
 grant all on public.client_accounts to authenticated;
 grant all on public.client_account_users to authenticated;
+grant all on public.drivers to authenticated;
 grant all on public.orders to authenticated;
 
 create policy "Users can read their own profile"
@@ -214,6 +231,19 @@ using (user_id = auth.uid() or public.is_dispatcher());
 
 create policy "Dispatchers can manage client memberships"
 on public.client_account_users
+for all
+to authenticated
+using (public.is_dispatcher())
+with check (public.is_dispatcher());
+
+create policy "Dispatchers can read drivers"
+on public.drivers
+for select
+to authenticated
+using (public.is_dispatcher());
+
+create policy "Dispatchers can manage drivers"
+on public.drivers
 for all
 to authenticated
 using (public.is_dispatcher())

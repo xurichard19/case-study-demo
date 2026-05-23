@@ -5,7 +5,8 @@ services:
     image: dispatch-case-study-backend
     container_name: dispatch-case-study-backend
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}

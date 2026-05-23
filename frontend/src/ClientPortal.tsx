@@ -1,38 +1,92 @@
+import { useEffect, useMemo, useState } from 'react'
+import { getClients, getOrders, type ApiOrder, type ClientAccount } from './api'
+
 type ClientPortalProps = {
   onLogout: () => void
 }
 
-const clientOrders = [
-  {
-    id: 'ORD-25001',
-    requested: 'Mar 12, 10:28 AM',
-    service: 'Routine',
-    route: '02177 -> 02101',
-    eta: '1:51 PM',
-    status: 'In transit',
-    note: 'Driver assigned, delivery on schedule.',
-  },
-  {
-    id: 'ORD-25004',
-    requested: 'Feb 12, 5:49 PM',
-    service: 'Routine',
-    route: '02184 -> 02105',
-    eta: '11:33 PM',
-    status: 'Attention needed',
-    note: 'Parking delay reported near destination.',
-  },
-  {
-    id: 'ORD-25005',
-    requested: 'Feb 4, 3:27 PM',
-    service: 'STAT',
-    route: '02103 -> 02153',
-    eta: '4:10 PM',
-    status: 'Delivered',
-    note: 'Delivery completed; redelivery review pending.',
-  },
-]
+function formatDate(value: string | null) {
+  if (!value) {
+    return 'Not set'
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value))
+}
+
+function clientStatus(order: ApiOrder) {
+  if (order.delivery_time) {
+    return 'Delivered'
+  }
+
+  if (order.exception_notes || order.on_time === false) {
+    return 'Attention needed'
+  }
+
+  if (order.pickup_time || order.dispatch_time) {
+    return 'In transit'
+  }
+
+  return 'Processing'
+}
 
 function ClientPortal({ onLogout }: ClientPortalProps) {
+  const [clients, setClients] = useState<ClientAccount[]>([])
+  const [selectedClientId, setSelectedClientId] = useState<string>('')
+  const [orders, setOrders] = useState<ApiOrder[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function loadClients() {
+      try {
+        const clientData = await getClients()
+        setClients(clientData)
+        setSelectedClientId(clientData[0]?.id ?? '')
+      } catch (requestError) {
+        setError(requestError instanceof Error ? requestError.message : 'Unable to load clients')
+        setIsLoading(false)
+      }
+    }
+
+    loadClients()
+  }, [])
+
+  useEffect(() => {
+    async function loadOrders() {
+      if (!selectedClientId) {
+        setOrders([])
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        setOrders(await getOrders(selectedClientId))
+        setError(null)
+      } catch (requestError) {
+        setError(requestError instanceof Error ? requestError.message : 'Unable to load orders')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadOrders()
+  }, [selectedClientId])
+
+  const attentionCount = useMemo(
+    () => orders.filter((order) => clientStatus(order) === 'Attention needed').length,
+    [orders],
+  )
+  const onScheduleCount = useMemo(
+    () => orders.filter((order) => clientStatus(order) !== 'Attention needed').length,
+    [orders],
+  )
+
   return (
     <main className="dashboard-page">
       <nav className="top-nav dashboard-nav" aria-label="Client portal navigation">
@@ -63,15 +117,15 @@ function ClientPortal({ onLogout }: ClientPortalProps) {
         </div>
         <div className="summary-grid" aria-label="Client order summary">
           <article>
-            <span>{clientOrders.length}</span>
+            <span>{orders.length}</span>
             <p>Total visible</p>
           </article>
           <article>
-            <span>1</span>
+            <span>{attentionCount}</span>
             <p>Needs attention</p>
           </article>
           <article>
-            <span>2</span>
+            <span>{onScheduleCount}</span>
             <p>On schedule</p>
           </article>
         </div>
@@ -79,42 +133,63 @@ function ClientPortal({ onLogout }: ClientPortalProps) {
 
       <section className="orders-section" aria-labelledby="client-orders-title">
         <div className="section-heading">
-          <h2 id="client-orders-title">Visible orders</h2>
-          <p>Static placeholder rows until client-scoped auth/data is wired.</p>
+          <div>
+            <h2 id="client-orders-title">Visible orders</h2>
+            <p>Showing a selectable client account until auth scoping is wired.</p>
+          </div>
+          <select
+            className="client-select"
+            aria-label="Client account"
+            value={selectedClientId}
+            onChange={(event) => setSelectedClientId(event.target.value)}
+          >
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div className="client-order-grid">
-          {clientOrders.map((order) => (
-            <article className="client-order-card" key={order.id}>
-              <div>
-                <strong>{order.id}</strong>
-                <span>{order.requested}</span>
-              </div>
-              <span
-                className={`status-pill ${
-                  order.status === 'Attention needed' ? 'at-risk' : 'on-time'
-                }`}
-              >
-                {order.status}
-              </span>
-              <dl>
-                <div>
-                  <dt>Service</dt>
-                  <dd>{order.service}</dd>
-                </div>
-                <div>
-                  <dt>Route</dt>
-                  <dd>{order.route}</dd>
-                </div>
-                <div>
-                  <dt>ETA</dt>
-                  <dd>{order.eta}</dd>
-                </div>
-              </dl>
-              <p>{order.note}</p>
-            </article>
-          ))}
-        </div>
+        {isLoading && <p className="state-message">Loading client orders...</p>}
+        {error && <p className="state-message error-message">{error}</p>}
+
+        {!isLoading && !error && (
+          <div className="client-order-grid">
+            {orders.map((order) => {
+              const status = clientStatus(order)
+
+              return (
+                <article className="client-order-card" key={order.id}>
+                  <div>
+                    <strong>{order.id}</strong>
+                    <span>{formatDate(order.order_time)}</span>
+                  </div>
+                  <span className={`status-pill ${status === 'Attention needed' ? 'at-risk' : 'on-time'}`}>
+                    {status}
+                  </span>
+                  <dl>
+                    <div>
+                      <dt>Service</dt>
+                      <dd>{order.service_type ?? 'Unknown'}</dd>
+                    </div>
+                    <div>
+                      <dt>Route</dt>
+                      <dd>
+                        {order.pickup_zip ?? '----'} {'->'} {order.delivery_zip ?? '----'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>ETA</dt>
+                      <dd>{formatDate(order.promised_eta)}</dd>
+                    </div>
+                  </dl>
+                  <p>{order.exception_notes ?? 'No current exceptions reported.'}</p>
+                </article>
+              )
+            })}
+          </div>
+        )}
       </section>
     </main>
   )
