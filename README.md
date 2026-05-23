@@ -1,6 +1,6 @@
 # Dispatch Case Study
 
-This is a demo implementation of the case study that uses a FastAPI + React/Vite stack with Pandas, PostgreSQL, and Supabase for lightweight data analytics.
+This is a demo implementation of the case study that uses a FastAPI + React/Vite stack with Supabase/PostgreSQL, Docker, and Pandas for lightweight data analytics.
 I focus on four high-impact workflows from the case study: exception severity triage, customer status, automated weekly reporting, and driver matching support. I use deterministic analytics to produce metrics and recommendations, and use the OpenAI API for natural language reports. Codex 5.5 was my tool of choice for rapid feature shipping, but I manually planned and designed the architecture of this application.
 
 Before implementation, I first identified key user needs and map each to a potential solution, then prioritized based on explicit requests and operational impact.
@@ -28,3 +28,40 @@ Some user needs and possible solutions:
 ---
 
 Our demo implementation focusus on implementing the four explicitly requested user needs, namely (5) assign severity to each exception note, (6) handle status inquiries, (8) automatic weekly reports, and (4) driver matching.
+
+---
+
+### Configuring the Demo
+
+Change directories to /frontend and run the following for the frontend server:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Run the following commands to create a Docker image from the backend and run the API server:
+
+```bash
+docker compose build backend
+docker compose up -d backend
+```
+
+Verify the backend is running:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Seed Supabase from the CSV:
+
+```bash
+docker compose run --rm backend python scripts/seed_from_csv.py
+```
+
+View logs or stop the backend:
+
+```bash
+docker compose logs -f backend
+docker compose down
+```
