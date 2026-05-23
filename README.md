@@ -16,11 +16,11 @@ Some user needs and possible solutions:
 |5| Assign severity to each exception note | Implement LLM-based exception triage, sort into three severities, push notify severe issues, recommend actions |
 |6| Dealing with status calls | Build customer portal, integrate live GPS information and ETA |
 |7| Reallocating trips is high pressure | Add reallocation workflow, use suggestion LLM but incorporate context (which drivers are available) |
-|8| Weekly report | Summarize key metrics like on-time rate by service, by client, by driver, redelivery rate, and exception volume using Python/SQL, generate insights with LLM |
+|8| Automate weekly report | Summarize key metrics like on-time rate by service, by client, by driver, redelivery rate, and exception volume using Python/SQL, generate insights with LLM |
 |9| Driver onboarding documentation is outdated | Update documentation and build dedicated onboarding center |
 |10| Automated driver flagging | Automatically flag drivers based on exception rate and tardiness |
 |11| Pulling up client report takes time | Build dedicated client database, suggest compensation based on metrics |
 
 ---
 
-Our demo implementation focusus on implementing the four explicitly requested user needs, namely (5) Assign severity to each exception note, (6) Handle status inquiries, (3) Build weekly reports, and (4) Driver matching.
+Our demo implementation focusus on implementing the four explicitly requested user needs, namely (5) assign severity to each exception note, (6) handle status inquiries, (8) build weekly reports, and (4) driver matching.
