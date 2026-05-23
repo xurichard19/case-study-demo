@@ -17,5 +17,3 @@ def check_exception_notes():
         print(note, count)
     
     # we find that there are 64 unique exception notes
-
-check_exception_notes()
