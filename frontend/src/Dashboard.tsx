@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getClients, getDrivers, getOrders, type ApiOrder, type ClientAccount, type Driver } from './api'
 
-const DEMO_DATE = '2025-03-25T00:00:00'
+const DEMO_DATE = new Date('2025-03-25T00:00:00')
+const DEMO_DATE_PARAM = DEMO_DATE.toISOString()
+const DEMO_DATE_LABEL = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+}).format(DEMO_DATE)
 const PAST_PAGE_SIZE = 100
 
 type DashboardProps = {
@@ -40,31 +46,27 @@ function statusLabel(order: ApiOrder) {
   return 'On time'
 }
 
-function severity(order: ApiOrder) {
-  const notes = order.exception_notes?.toLowerCase() ?? ''
+const severityLabels = {
+  'severity one': 'Severity one',
+  'severity two': 'Severity two',
+  'severity three': 'Severity three',
+}
 
-  if (order.redelivery_flag || notes.includes('redelivery') || order.status === 'delayed') {
-    return 'High'
-  }
-
-  if (notes) {
-    return 'Medium'
-  }
-
-  return 'Low'
+const severityScores = {
+  'severity one': 100,
+  'severity two': 50,
+  'severity three': 0,
 }
 
 function priorityScore(order: ApiOrder) {
   const label = statusLabel(order)
-  const orderSeverity = severity(order)
   const service = order.service_type?.toLowerCase() ?? ''
 
   let score = 0
+  score += severityScores[order.severity]
   if (label === 'Unassigned') score += 100
   if (label === 'Delayed') score += 80
   if (label === 'At risk') score += 50
-  if (orderSeverity === 'High') score += 35
-  if (orderSeverity === 'Medium') score += 15
   if (service.includes('stat')) score += 25
   if (service.includes('rush')) score += 18
   if (order.redelivery_flag) score += 30
@@ -99,8 +101,8 @@ function Dashboard({ mode, onLogout, onSelectCurrent, onSelectPast }: DashboardP
         setIsLoading(true)
         const [ordersData, clientsData, driversData] = await Promise.all([
           getOrders({
-            beforeTime: mode === 'past' ? DEMO_DATE : undefined,
-            fromTime: mode === 'current' ? DEMO_DATE : undefined,
+            beforeTime: mode === 'past' ? DEMO_DATE_PARAM : undefined,
+            fromTime: mode === 'current' ? DEMO_DATE_PARAM : undefined,
             limit: mode === 'past' ? PAST_PAGE_SIZE : 1000,
             offset: mode === 'past' ? pastPage * PAST_PAGE_SIZE : 0,
           }),
@@ -171,7 +173,7 @@ function Dashboard({ mode, onLogout, onSelectCurrent, onSelectPast }: DashboardP
 
       <section className="dashboard-header" aria-labelledby="dashboard-title">
         <div>
-          <p className="eyebrow">Demo date: Mar 15, 2025</p>
+          <p className="eyebrow">Demo date: {DEMO_DATE_LABEL}</p>
           <h1 id="dashboard-title">{title}</h1>
           <p>
             {mode === 'current'
@@ -237,7 +239,6 @@ function Dashboard({ mode, onLogout, onSelectCurrent, onSelectPast }: DashboardP
               <tbody>
                 {orders.map((order) => {
                   const orderStatus = statusLabel(order)
-                  const orderSeverity = severity(order)
 
                   return (
                     <tr key={order.id}>
@@ -258,8 +259,8 @@ function Dashboard({ mode, onLogout, onSelectCurrent, onSelectPast }: DashboardP
                         </span>
                       </td>
                       <td>
-                        <strong className={`severity severity-${orderSeverity.toLowerCase()}`}>
-                          {orderSeverity}
+                        <strong className={`severity ${order.severity.replace(' ', '-')}`}>
+                          {severityLabels[order.severity]}
                         </strong>
                         <span>{order.exception_notes ?? 'None logged'}</span>
                       </td>

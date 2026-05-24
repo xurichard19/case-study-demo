@@ -30,6 +30,7 @@ export type ApiOrder = {
   driver_idle_min: number | null
   fuel_cost_usd: string | null
   redelivery_flag: boolean
+  severity: 'severity one' | 'severity two' | 'severity three'
   status: string
 }
 

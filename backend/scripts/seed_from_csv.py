@@ -7,6 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from postgrest.exceptions import APIError
 
+from severity_classifier import classify_severity
 from supabase_client import get_supabase_client
 
 
@@ -50,6 +51,17 @@ def parse_float(value: str) -> float | None:
     return float(value) if value else None
 
 
+def delay_minutes(row: dict[str, str]) -> int | None:
+    delivery_time = parse_datetime(row["delivery_time"])
+    promised_eta = parse_datetime(row["promised_eta"])
+
+    if not delivery_time or not promised_eta:
+        return None
+
+    delay = datetime.fromisoformat(delivery_time) - datetime.fromisoformat(promised_eta)
+    return max(0, int(delay.total_seconds() // 60))
+
+
 def order_status(row: dict[str, str]) -> str:
     if not row.get("driver_id"):
         return "pending"
@@ -87,10 +99,23 @@ def main() -> None:
     client_ids_by_name = {client["name"]: client["id"] for client in clients_response.data}
 
     orders = []
+    severity_cache: dict[tuple[str | None, str | None, int | None], str] = {}
     for row in rows:
         client_account_id = client_ids_by_name.get(row["client_name"].strip())
         if not client_account_id:
             continue
+
+        service_type = row["service_type"].upper() if row["service_type"] else None
+        exception_notes = row["exception_notes"] or None
+        delay_time = delay_minutes(row)
+        severity_key = (exception_notes, service_type, delay_time)
+
+        if severity_key not in severity_cache:
+            severity_cache[severity_key] = classify_severity(
+                exception_notes,
+                service_type,
+                delay_time,
+            )
 
         orders.append(
             {
@@ -99,17 +124,18 @@ def main() -> None:
                 "order_time": parse_datetime(row["order_time"]),
                 "pickup_zip": row["pickup_zip"] or None,
                 "delivery_zip": row["delivery_zip"] or None,
-                "service_type": row["service_type"].upper() if row["service_type"] else None,
+                "service_type": service_type,
                 "driver_id": row["driver_id"] or None,
                 "dispatch_time": parse_datetime(row["dispatch_time"]),
                 "pickup_time": parse_datetime(row["pickup_time"]),
                 "delivery_time": parse_datetime(row["delivery_time"]),
                 "promised_eta": parse_datetime(row["promised_eta"]),
                 "on_time": parse_bool(row["on_time"]),
-                "exception_notes": row["exception_notes"] or None,
+                "exception_notes": exception_notes,
                 "driver_idle_min": parse_int(row["driver_idle_min"]),
                 "fuel_cost_usd": parse_float(row["fuel_cost_usd"]),
                 "redelivery_flag": parse_bool(row["redelivery_flag"]) or False,
+                "severity": severity_cache[severity_key],
                 "status": order_status(row),
             }
         )
@@ -123,6 +149,7 @@ def main() -> None:
     print(
         f"Seeded {len(client_names)} clients, {len(driver_ids)} drivers, and {len(orders)} orders."
     )
+    print(f"Classified {len(severity_cache)} unique severity contexts.")
 
 
 if __name__ == "__main__":

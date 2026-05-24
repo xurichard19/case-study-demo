@@ -51,11 +51,15 @@ create table public.orders (
   driver_idle_min integer,
   fuel_cost_usd numeric(10, 2),
   redelivery_flag boolean not null default false,
+  severity text not null default 'severity three',
   status text not null default 'pending',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint orders_status_check check (
     status in ('pending', 'assigned', 'in_transit', 'delivered', 'delayed', 'cancelled')
+  ),
+  constraint orders_severity_check check (
+    severity in ('severity one', 'severity two', 'severity three')
   )
 );
 
@@ -67,6 +71,9 @@ create index orders_client_account_id_idx
 
 create index orders_status_idx
   on public.orders (status);
+
+create index orders_severity_idx
+  on public.orders (severity);
 
 create index drivers_active_idx
   on public.drivers (active);

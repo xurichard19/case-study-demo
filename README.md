@@ -47,7 +47,7 @@ docker compose build backend
 docker compose up -d backend
 ```
 
-Seed Supabase from the CSV:
+Seed Supabase from the CSV and classify order severity:
 
 ```bash
 docker compose run --rm backend python scripts/seed_from_csv.py

@@ -600,19 +600,19 @@ td span {
   margin-bottom: 6px;
 }
 
-.severity-low {
-  color: #2563eb;
-  background: rgba(59, 130, 246, 0.14);
+.severity-one {
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.14);
 }
 
-.severity-medium {
+.severity-two {
   color: #9333ea;
   background: rgba(147, 51, 234, 0.14);
 }
 
-.severity-high {
-  color: #b91c1c;
-  background: rgba(239, 68, 68, 0.14);
+.severity-three {
+  color: #2563eb;
+  background: rgba(59, 130, 246, 0.14);
 }
 
 .client-order-grid {

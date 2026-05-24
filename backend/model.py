@@ -35,4 +35,5 @@ class Order(BaseModel):
     driver_idle_min: int | None = None
     fuel_cost_usd: Decimal | None = None
     redelivery_flag: bool = False
+    severity: str = "severity three"
     status: str
