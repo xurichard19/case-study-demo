@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from postgrest.exceptions import APIError
 
-from severity_classifier import rate_exception_note
+from services.severity_classifier import rate_exception_note
 from supabase_client import get_supabase_client
 
 

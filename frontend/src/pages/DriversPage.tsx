@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getDriverMetrics, type DriverMetrics } from './api'
+import { getDriverMetrics, type DriverMetrics } from '../services/api'
 
 type DriversPageProps = {
   onLogout: () => void
@@ -102,7 +102,7 @@ function DriversPage({ onLogout, onSelectHome, onSelectCurrent, onSelectPast }: 
           <button type="button" className="logout-button" onClick={onLogout}>
             Log out
           </button>
-          <div className="dashboard-menu">
+          <div className="dashboard-menu" onMouseLeave={() => setIsMenuOpen(false)}>
             <button
               type="button"
               className="menu-button"

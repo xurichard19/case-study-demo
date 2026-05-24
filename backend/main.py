@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from daily_report_service import start_daily_report_scheduler
 from routers import clients, daily_reports, drivers, orders
+from services.daily_report_service import start_daily_report_scheduler
 
 
 app = FastAPI(title="Dispatch Case Study API")

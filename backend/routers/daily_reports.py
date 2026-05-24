@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 from postgrest.exceptions import APIError
 
-from daily_report_service import get_or_create_daily_report
 from model import DailyReport
 from routers.errors import supabase_error
+from services.daily_report_service import get_or_create_daily_report
 
 
 router = APIRouter(prefix="/api/daily-report", tags=["daily-report"])

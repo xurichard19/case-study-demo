@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getClients, getDrivers, getOrders, type ApiOrder, type ClientAccount, type Driver } from './api'
+import { getClients, getDriverMetrics, getOrders, type ApiOrder, type ClientAccount, type DriverMetrics } from '../services/api'
 
 const DEMO_DATE = new Date('2025-03-31T00:00:00')
 const DEMO_DATE_PARAM = DEMO_DATE.toISOString()
@@ -107,7 +107,7 @@ function sortCurrentOrders(orders: ApiOrder[]) {
 function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectDrivers, onSelectPast }: DashboardProps) {
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [clients, setClients] = useState<ClientAccount[]>([])
-  const [drivers, setDrivers] = useState<Driver[]>([])
+  const [drivers, setDrivers] = useState<DriverMetrics[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -125,7 +125,7 @@ function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectDriv
             offset: mode === 'past' ? pastPage * PAST_PAGE_SIZE : 0,
           }),
           getClients(),
-          getDrivers(),
+          getDriverMetrics(),
         ])
         setOrders(mode === 'current' ? sortCurrentOrders(ordersData) : ordersData)
         setClients(clientsData)
@@ -158,6 +158,13 @@ function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectDriv
   const assignedOrders = useMemo(
     () => (mode === 'current' ? orders.filter((order) => !isUnassignedOrder(order)) : orders),
     [mode, orders],
+  )
+  const assignmentDrivers = useMemo(
+    () =>
+      drivers.filter(
+        (driver) => driver.active && driver.current_order_count > 0 && !driver.unacceptable_metrics,
+      ),
+    [drivers],
   )
 
   function renderOrdersTable(tableOrders: ApiOrder[], showDriverAssignment = false) {
@@ -192,7 +199,7 @@ function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectDriv
                     {showDriverAssignment ? (
                       <select className="driver-select" aria-label={`Assign driver for ${order.id}`} defaultValue="">
                         <option value="">Select driver</option>
-                        {drivers.map((driver) => (
+                        {assignmentDrivers.map((driver) => (
                           <option key={driver.id} value={driver.id}>
                             {driver.display_name ?? driver.id}
                           </option>
@@ -237,7 +244,7 @@ function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectDriv
           <button type="button" className="logout-button" onClick={onLogout}>
             Log out
           </button>
-          <div className="dashboard-menu">
+          <div className="dashboard-menu" onMouseLeave={() => setIsMenuOpen(false)}>
             <button
               type="button"
               className="menu-button"

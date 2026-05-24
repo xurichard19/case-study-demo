@@ -33,6 +33,16 @@ Our demo implementation focusus on implementing the four explicitly requested us
 
 ### Configuring the Demo
 
+### Project Structure
+
+- `frontend/src/pages`: route-level React screens.
+- `frontend/src/services`: frontend API client and shared service types.
+- `frontend/src/styles`: global and app-level CSS.
+- `backend/routers`: FastAPI route handlers.
+- `backend/services`: external API integrations and domain workflows.
+- `backend/scripts`: one-off operational scripts such as CSV seeding.
+- `supabase/migrations`: reset-oriented demo schema.
+
 Change directories to /frontend and run the following for the frontend server:
 
 ```bash

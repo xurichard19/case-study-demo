@@ -15,7 +15,7 @@ function Home({ onSelectClient, onSelectDispatcher }: HomeProps) {
           <span className="brand-mark" aria-hidden="true">CS</span>
           <span>Dispatch Portal</span>
         </button>
-        <div className="home-menu">
+        <div className="home-menu" onMouseLeave={() => setIsMenuOpen(false)}>
           <button
             type="button"
             className="menu-button"

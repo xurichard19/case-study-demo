@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getDailyReport, type DailyReport } from './api'
+import { getDailyReport, type DailyReport } from '../services/api'
 
 type DispatcherHomeProps = {
   onLogout: () => void
@@ -59,7 +59,7 @@ function DispatcherHome({ onLogout, onSelectCurrent, onSelectDrivers, onSelectPa
           <button type="button" className="logout-button" onClick={onLogout}>
             Log out
           </button>
-          <div className="dashboard-menu">
+          <div className="dashboard-menu" onMouseLeave={() => setIsMenuOpen(false)}>
             <button
               type="button"
               className="menu-button"

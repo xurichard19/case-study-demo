@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getClients, getOrders, type ApiOrder, type ClientAccount } from './api'
+import { getClients, getOrders, type ApiOrder, type ClientAccount } from '../services/api'
 
 type ClientPortalProps = {
   mode: 'current' | 'past'
@@ -143,7 +143,7 @@ function ClientPortal({ mode, onLogout, onSelectCurrent, onSelectPast }: ClientP
           <button type="button" className="logout-button" onClick={onLogout}>
             Log out
           </button>
-          <div className="dashboard-menu">
+          <div className="dashboard-menu" onMouseLeave={() => setIsMenuOpen(false)}>
             <button
               type="button"
               className="menu-button"
