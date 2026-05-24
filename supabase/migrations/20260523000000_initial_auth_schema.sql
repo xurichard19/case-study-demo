@@ -2,6 +2,7 @@ create extension if not exists pgcrypto;
 
 drop trigger if exists on_auth_user_created on auth.users;
 drop table if exists public.orders cascade;
+drop table if exists public.daily_reports cascade;
 drop table if exists public.exception_notes cascade;
 drop table if exists public.client_account_users cascade;
 drop table if exists public.drivers cascade;
@@ -60,6 +61,18 @@ create table public.exception_notes (
   )
 );
 
+create table public.daily_reports (
+  id uuid primary key default gen_random_uuid(),
+  report_date date not null unique,
+  location text not null default 'Boston, MA',
+  weather jsonb not null default '{}'::jsonb,
+  traffic jsonb not null default '{}'::jsonb,
+  summary text not null,
+  generated_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table public.orders (
   id text primary key,
   client_account_id uuid not null references public.client_accounts (id),
@@ -105,6 +118,9 @@ create index orders_severity_idx
 create index orders_exception_note_id_idx
   on public.orders (exception_note_id);
 
+create index daily_reports_report_date_idx
+  on public.daily_reports (report_date desc);
+
 create index drivers_active_idx
   on public.drivers (active);
 
@@ -132,6 +148,10 @@ for each row execute function public.set_updated_at();
 
 create trigger exception_notes_set_updated_at
 before update on public.exception_notes
+for each row execute function public.set_updated_at();
+
+create trigger daily_reports_set_updated_at
+before update on public.daily_reports
 for each row execute function public.set_updated_at();
 
 create trigger drivers_set_updated_at
@@ -220,6 +240,7 @@ alter table public.client_accounts enable row level security;
 alter table public.client_account_users enable row level security;
 alter table public.drivers enable row level security;
 alter table public.exception_notes enable row level security;
+alter table public.daily_reports enable row level security;
 alter table public.orders enable row level security;
 
 grant usage on schema public to authenticated;
@@ -228,6 +249,7 @@ grant all on public.client_accounts to authenticated;
 grant all on public.client_account_users to authenticated;
 grant all on public.drivers to authenticated;
 grant all on public.exception_notes to authenticated;
+grant all on public.daily_reports to authenticated;
 grant all on public.orders to authenticated;
 
 create policy "Users can read their own profile"
@@ -300,6 +322,19 @@ using (public.is_dispatcher());
 
 create policy "Dispatchers can manage exception notes"
 on public.exception_notes
+for all
+to authenticated
+using (public.is_dispatcher())
+with check (public.is_dispatcher());
+
+create policy "Dispatchers can read daily reports"
+on public.daily_reports
+for select
+to authenticated
+using (public.is_dispatcher());
+
+create policy "Dispatchers can manage daily reports"
+on public.daily_reports
 for all
 to authenticated
 using (public.is_dispatcher())

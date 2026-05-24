@@ -13,6 +13,7 @@ const PAST_PAGE_SIZE = 100
 type DashboardProps = {
   mode: 'current' | 'past'
   onLogout: () => void
+  onSelectHome: () => void
   onSelectCurrent: () => void
   onSelectPast: () => void
 }
@@ -58,6 +59,12 @@ const severityScores = {
   'severity three': 0,
 }
 
+const severityRanks = {
+  'severity one': 3,
+  'severity two': 2,
+  'severity three': 1,
+}
+
 function priorityScore(order: ApiOrder) {
   const label = statusLabel(order)
   const service = order.service_type?.toLowerCase() ?? ''
@@ -76,6 +83,12 @@ function priorityScore(order: ApiOrder) {
 
 function sortCurrentOrders(orders: ApiOrder[]) {
   return [...orders].sort((first, second) => {
+    const severityDifference = severityRanks[second.severity] - severityRanks[first.severity]
+
+    if (severityDifference !== 0) {
+      return severityDifference
+    }
+
     const priorityDifference = priorityScore(second) - priorityScore(first)
 
     if (priorityDifference !== 0) {
@@ -86,7 +99,7 @@ function sortCurrentOrders(orders: ApiOrder[]) {
   })
 }
 
-function Dashboard({ mode, onLogout, onSelectCurrent, onSelectPast }: DashboardProps) {
+function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectPast }: DashboardProps) {
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [clients, setClients] = useState<ClientAccount[]>([])
   const [drivers, setDrivers] = useState<Driver[]>([])
@@ -159,6 +172,9 @@ function Dashboard({ mode, onLogout, onSelectCurrent, onSelectPast }: DashboardP
             </button>
             {isMenuOpen && (
               <div className="menu-popover" aria-label="Dispatcher pages">
+                <button type="button" onClick={onSelectHome}>
+                  Daily briefing
+                </button>
                 <button type="button" onClick={onSelectCurrent}>
                   Current orders
                 </button>

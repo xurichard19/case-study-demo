@@ -3,6 +3,7 @@ import './App.css'
 import ClientLogin from './ClientLogin'
 import ClientPortal from './ClientPortal'
 import Dashboard from './Dashboard'
+import DispatcherHome from './DispatcherHome'
 import DispatcherLogin from './DispatcherLogin'
 import Home from './Home'
 
@@ -10,6 +11,7 @@ type View =
   | 'home'
   | 'dispatcher-login'
   | 'client-login'
+  | 'dispatcher-home'
   | 'dispatcher-dashboard'
   | 'dispatcher-past-orders'
   | 'client-portal'
@@ -18,6 +20,7 @@ const viewPaths: Record<View, string> = {
   home: '/',
   'dispatcher-login': '/dispatcher/login',
   'client-login': '/client/login',
+  'dispatcher-home': '/dispatcher',
   'dispatcher-dashboard': '/dispatcher/current-orders',
   'dispatcher-past-orders': '/dispatcher/past-orders',
   'client-portal': '/client/orders',
@@ -50,11 +53,22 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
+  if (view === 'dispatcher-home') {
+    return (
+      <DispatcherHome
+        onLogout={() => navigate('home')}
+        onSelectCurrent={() => navigate('dispatcher-dashboard')}
+        onSelectPast={() => navigate('dispatcher-past-orders')}
+      />
+    )
+  }
+
   if (view === 'dispatcher-dashboard') {
     return (
       <Dashboard
         mode="current"
         onLogout={() => navigate('home')}
+        onSelectHome={() => navigate('dispatcher-home')}
         onSelectCurrent={() => navigate('dispatcher-dashboard')}
         onSelectPast={() => navigate('dispatcher-past-orders')}
       />
@@ -66,6 +80,7 @@ function App() {
       <Dashboard
         mode="past"
         onLogout={() => navigate('home')}
+        onSelectHome={() => navigate('dispatcher-home')}
         onSelectCurrent={() => navigate('dispatcher-dashboard')}
         onSelectPast={() => navigate('dispatcher-past-orders')}
       />
@@ -76,7 +91,7 @@ function App() {
     return (
       <DispatcherLogin
         onBackHome={() => navigate('home')}
-        onLogin={() => navigate('dispatcher-dashboard')}
+        onLogin={() => navigate('dispatcher-home')}
         onSelectClient={() => navigate('client-login')}
       />
     )

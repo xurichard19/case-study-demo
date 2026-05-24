@@ -451,7 +451,8 @@
   font-size: 13px;
 }
 
-.orders-section {
+.orders-section,
+.briefing-section {
   padding: 32px 40px 44px;
 }
 
@@ -521,6 +522,63 @@
 .error-message {
   color: #b91c1c;
   background: rgba(239, 68, 68, 0.1);
+}
+
+.briefing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(220px, 0.8fr));
+  gap: 16px;
+}
+
+.briefing-panel {
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+}
+
+.briefing-panel h3 {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+
+.briefing-summary p {
+  color: var(--text-h);
+  font-size: 17px;
+  line-height: 160%;
+}
+
+.briefing-panel dl {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.briefing-panel dl div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.briefing-panel dl div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.briefing-panel dt {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.briefing-panel dd {
+  margin: 0;
+  color: var(--text-h);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
 }
 
 .table-wrap {
@@ -731,7 +789,8 @@ td span {
     font-size: 36px;
   }
 
-  .orders-section {
+  .orders-section,
+  .briefing-section {
     padding: 26px 20px 34px;
   }
 
@@ -742,6 +801,10 @@ td span {
   }
 
   .client-order-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .briefing-layout {
     grid-template-columns: 1fr;
   }
 }

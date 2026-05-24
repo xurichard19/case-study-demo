@@ -9,6 +9,7 @@ This directory contains database migrations for the dispatch case study.
 - `client_account_users`: many-to-many membership between client users and client accounts.
 - `drivers`: dispatcher-visible driver records.
 - `exception_notes`: cached GPT severity scores for unique exception notes.
+- `daily_reports`: one cached Boston weather and traffic report for each operating day.
 - `orders`: dispatch order records scoped to a client account.
 
 ## Access Model

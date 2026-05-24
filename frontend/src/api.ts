@@ -34,6 +34,28 @@ export type ApiOrder = {
   status: string
 }
 
+export type DailyReport = {
+  id: string
+  report_date: string
+  location: string
+  weather: {
+    current?: {
+      temperature_2m?: number
+      precipitation?: number
+      wind_speed_10m?: number
+      wind_gusts_10m?: number
+    }
+  }
+  traffic: {
+    available?: boolean
+    provider?: string
+    message?: string
+    incidents?: unknown[]
+  }
+  summary: string
+  generated_at: string
+}
+
 type GetOrdersOptions = {
   beforeTime?: string
   clientAccountId?: string
@@ -58,6 +80,10 @@ export function getClients() {
 
 export function getDrivers() {
   return getJson<Driver[]>('/api/drivers')
+}
+
+export function getDailyReport() {
+  return getJson<DailyReport>('/api/daily-report')
 }
 
 export function getOrders(options: GetOrdersOptions = {}) {

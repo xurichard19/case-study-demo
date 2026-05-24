@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -37,3 +38,13 @@ class Order(BaseModel):
     redelivery_flag: bool = False
     severity: str = "severity three"
     status: str
+
+
+class DailyReport(BaseModel):
+    id: UUID
+    report_date: date
+    location: str
+    weather: dict[str, Any]
+    traffic: dict[str, Any]
+    summary: str
+    generated_at: datetime
