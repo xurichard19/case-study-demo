@@ -1,11 +1,13 @@
 # Dispatch Case Study
 
-This is a demo implementation of the case study that uses a FastAPI + React/Vite stack with Supabase/PostgreSQL, Docker, and Pandas for lightweight data analytics.
+This is a demo implementation of the case study that uses a FastAPI + React/Vite stack with Supabase, Postgres, and Docker for lightweight scalable data analytics.
 I focus on four high-impact workflows from the case study: exception severity triage, customer status, automated weekly reporting, and driver matching support. I use deterministic analytics to produce metrics and recommendations, and use the OpenAI API for natural language reports. Codex 5.5 was my tool of choice for rapid feature shipping, but I manually planned and designed the architecture of this application.
 
 Before implementation, I first identified key user needs and map each to a potential solution, then prioritized based on explicit requests and operational impact.
 
 It should be noted that the exception triage and live status reports are not totally feasible to implement due to the lack of live exception data and GPS pings in the given CSV. However, we can simulate live exception info with the provided CSV and implement the base status report infrastructure.
+
+Additionally, driver matching could not be implemented due to a lack of information surrounding Sam's personal knowledge about the driver and client relationships but I propose a solution later.
 
 ---
 
@@ -27,21 +29,13 @@ Some user needs and possible solutions:
 
 ---
 
-Our demo implementation focusus on implementing the four explicitly requested user needs, namely (5) assign severity to each exception note, (6) handle status inquiries, (8) automatic weekly reports, and (4) driver matching.
+Our demo implementation focuses on implementing the four explicitly requested user needs, namely (5) assign severity to each exception note, (6) handle status inquiries, (8) automatic weekly reports, and (4) driver matching. We additionally include some implicitly requested features like daily checkins and driver flagging.
 
 ---
 
 ### Configuring the Demo
 
-### Project Structure
-
-- `frontend/src/pages`: route-level React screens.
-- `frontend/src/services`: frontend API client and shared service types.
-- `frontend/src/styles`: global and app-level CSS.
-- `backend/routers`: FastAPI route handlers.
-- `backend/services`: external API integrations and domain workflows.
-- `backend/scripts`: one-off operational scripts such as CSV seeding.
-- `supabase/migrations`: reset-oriented demo schema.
+This demo requires you to compose a Docker image for the backend and create a new Supabase DB. You can run the migration script in the SQL Editor to instantiate the tables before running the seed script to populate using the CSV data.
 
 Change directories to /frontend and run the following for the frontend server:
 
@@ -57,8 +51,17 @@ docker compose build backend
 docker compose up -d backend
 ```
 
-Seed Supabase from the CSV and classify order severity:
+Seed Supabase from the CSV:
 
 ```bash
 docker compose run --rm backend python scripts/seed_from_csv.py
 ```
+
+---
+
+### Demo
+
+https://github.com/user-attachments/assets/ce69411b-faed-467e-9695-e82997c81b71
+
+---
+
