@@ -17,6 +17,7 @@ type DashboardProps = {
   onSelectCurrent: () => void
   onSelectDrivers: () => void
   onSelectPast: () => void
+  onSelectWeeklyReport: () => void
 }
 
 function formatDate(value: string | null) {
@@ -104,7 +105,15 @@ function sortCurrentOrders(orders: ApiOrder[]) {
   })
 }
 
-function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectDrivers, onSelectPast }: DashboardProps) {
+function Dashboard({
+  mode,
+  onLogout,
+  onSelectHome,
+  onSelectCurrent,
+  onSelectDrivers,
+  onSelectPast,
+  onSelectWeeklyReport,
+}: DashboardProps) {
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [clients, setClients] = useState<ClientAccount[]>([])
   const [drivers, setDrivers] = useState<DriverMetrics[]>([])
@@ -269,6 +278,9 @@ function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectDriv
                 </button>
                 <button type="button" onClick={onSelectDrivers}>
                   Drivers
+                </button>
+                <button type="button" onClick={onSelectWeeklyReport}>
+                  Weekly report
                 </button>
               </div>
             )}

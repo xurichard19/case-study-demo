@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import clients, daily_reports, drivers, orders
+from routers import clients, daily_reports, drivers, orders, reports
 from services.daily_report_service import start_daily_report_scheduler
 
 
@@ -22,6 +22,7 @@ app.include_router(clients.router)
 app.include_router(daily_reports.router)
 app.include_router(drivers.router)
 app.include_router(orders.router)
+app.include_router(reports.router)
 
 
 @app.on_event("startup")

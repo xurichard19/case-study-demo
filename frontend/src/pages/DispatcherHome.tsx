@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import MarkdownText from '../components/MarkdownText'
 import { getDailyReport, type DailyReport } from '../services/api'
 
 type DispatcherHomeProps = {
@@ -6,6 +7,7 @@ type DispatcherHomeProps = {
   onSelectCurrent: () => void
   onSelectDrivers: () => void
   onSelectPast: () => void
+  onSelectWeeklyReport: () => void
 }
 
 function formatDate(value: string) {
@@ -17,7 +19,13 @@ function formatDate(value: string) {
   }).format(new Date(value))
 }
 
-function DispatcherHome({ onLogout, onSelectCurrent, onSelectDrivers, onSelectPast }: DispatcherHomeProps) {
+function DispatcherHome({
+  onLogout,
+  onSelectCurrent,
+  onSelectDrivers,
+  onSelectPast,
+  onSelectWeeklyReport,
+}: DispatcherHomeProps) {
   const [report, setReport] = useState<DailyReport | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -77,6 +85,7 @@ function DispatcherHome({ onLogout, onSelectCurrent, onSelectDrivers, onSelectPa
                 <button type="button" onClick={onSelectCurrent}>Current orders</button>
                 <button type="button" onClick={onSelectPast}>Past orders</button>
                 <button type="button" onClick={onSelectDrivers}>Drivers</button>
+                <button type="button" onClick={onSelectWeeklyReport}>Weekly report</button>
               </div>
             )}
           </div>
@@ -122,7 +131,7 @@ function DispatcherHome({ onLogout, onSelectCurrent, onSelectDrivers, onSelectPa
           <div className="briefing-layout">
             <article className="briefing-panel briefing-summary">
               <h3>GPT summary</h3>
-              <p>{report.summary}</p>
+              <MarkdownText text={report.summary} />
             </article>
             <article className="briefing-panel">
               <h3>Weather</h3>

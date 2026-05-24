@@ -7,6 +7,7 @@ import DispatcherHome from './pages/DispatcherHome'
 import DispatcherLogin from './pages/DispatcherLogin'
 import DriversPage from './pages/DriversPage'
 import Home from './pages/Home'
+import WeeklyReportPage from './pages/WeeklyReportPage'
 
 type View =
   | 'home'
@@ -16,6 +17,7 @@ type View =
   | 'dispatcher-dashboard'
   | 'dispatcher-past-orders'
   | 'dispatcher-drivers'
+  | 'dispatcher-weekly-report'
   | 'client-portal'
   | 'client-past-orders'
 
@@ -27,6 +29,7 @@ const viewPaths: Record<View, string> = {
   'dispatcher-dashboard': '/dispatcher/current-orders',
   'dispatcher-past-orders': '/dispatcher/past-orders',
   'dispatcher-drivers': '/dispatcher/drivers',
+  'dispatcher-weekly-report': '/dispatcher/weekly-report',
   'client-portal': '/client/orders',
   'client-past-orders': '/client/past-orders',
 }
@@ -65,6 +68,19 @@ function App() {
         onSelectCurrent={() => navigate('dispatcher-dashboard')}
         onSelectDrivers={() => navigate('dispatcher-drivers')}
         onSelectPast={() => navigate('dispatcher-past-orders')}
+        onSelectWeeklyReport={() => navigate('dispatcher-weekly-report')}
+      />
+    )
+  }
+
+  if (view === 'dispatcher-weekly-report') {
+    return (
+      <WeeklyReportPage
+        onLogout={() => navigate('home')}
+        onSelectHome={() => navigate('dispatcher-home')}
+        onSelectCurrent={() => navigate('dispatcher-dashboard')}
+        onSelectDrivers={() => navigate('dispatcher-drivers')}
+        onSelectPast={() => navigate('dispatcher-past-orders')}
       />
     )
   }
@@ -76,6 +92,7 @@ function App() {
         onSelectHome={() => navigate('dispatcher-home')}
         onSelectCurrent={() => navigate('dispatcher-dashboard')}
         onSelectPast={() => navigate('dispatcher-past-orders')}
+        onSelectWeeklyReport={() => navigate('dispatcher-weekly-report')}
       />
     )
   }
@@ -89,6 +106,7 @@ function App() {
         onSelectCurrent={() => navigate('dispatcher-dashboard')}
         onSelectDrivers={() => navigate('dispatcher-drivers')}
         onSelectPast={() => navigate('dispatcher-past-orders')}
+        onSelectWeeklyReport={() => navigate('dispatcher-weekly-report')}
       />
     )
   }
@@ -102,6 +120,7 @@ function App() {
         onSelectCurrent={() => navigate('dispatcher-dashboard')}
         onSelectDrivers={() => navigate('dispatcher-drivers')}
         onSelectPast={() => navigate('dispatcher-past-orders')}
+        onSelectWeeklyReport={() => navigate('dispatcher-weekly-report')}
       />
     )
   }

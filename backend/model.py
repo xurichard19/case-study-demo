@@ -62,3 +62,24 @@ class DailyReport(BaseModel):
     traffic: dict[str, Any]
     summary: str
     generated_at: datetime
+
+
+class MetricRow(BaseModel):
+    name: str
+    total_orders: int
+    on_time_orders: int
+    on_time_rate: float
+
+
+class WeeklyReport(BaseModel):
+    report_date: date
+    week_start: date
+    week_end: date
+    total_orders: int
+    redelivery_count: int
+    redelivery_rate: float
+    exception_volume: int
+    summary: str
+    on_time_by_service: list[MetricRow]
+    on_time_by_client: list[MetricRow]
+    on_time_by_driver: list[MetricRow]

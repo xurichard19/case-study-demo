@@ -67,6 +67,27 @@ export type DailyReport = {
   generated_at: string
 }
 
+export type MetricRow = {
+  name: string
+  total_orders: number
+  on_time_orders: number
+  on_time_rate: number
+}
+
+export type WeeklyReport = {
+  report_date: string
+  week_start: string
+  week_end: string
+  total_orders: number
+  redelivery_count: number
+  redelivery_rate: number
+  exception_volume: number
+  summary: string
+  on_time_by_service: MetricRow[]
+  on_time_by_client: MetricRow[]
+  on_time_by_driver: MetricRow[]
+}
+
 type GetOrdersOptions = {
   beforeTime?: string
   clientAccountId?: string
@@ -99,6 +120,10 @@ export function getDriverMetrics() {
 
 export function getDailyReport() {
   return getJson<DailyReport>('/api/daily-report')
+}
+
+export function getWeeklyReport() {
+  return getJson<WeeklyReport>('/api/reports/weekly')
 }
 
 export function getOrders(options: GetOrdersOptions = {}) {

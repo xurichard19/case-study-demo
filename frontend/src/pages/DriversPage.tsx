@@ -6,13 +6,20 @@ type DriversPageProps = {
   onSelectHome: () => void
   onSelectCurrent: () => void
   onSelectPast: () => void
+  onSelectWeeklyReport: () => void
 }
 
 function formatRate(value: number) {
   return `${Math.round(value * 100)}%`
 }
 
-function DriversPage({ onLogout, onSelectHome, onSelectCurrent, onSelectPast }: DriversPageProps) {
+function DriversPage({
+  onLogout,
+  onSelectHome,
+  onSelectCurrent,
+  onSelectPast,
+  onSelectWeeklyReport,
+}: DriversPageProps) {
   const [drivers, setDrivers] = useState<DriverMetrics[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -119,6 +126,7 @@ function DriversPage({ onLogout, onSelectHome, onSelectCurrent, onSelectPast }: 
                 <button type="button" onClick={onSelectHome}>Daily briefing</button>
                 <button type="button" onClick={onSelectCurrent}>Current orders</button>
                 <button type="button" onClick={onSelectPast}>Past orders</button>
+                <button type="button" onClick={onSelectWeeklyReport}>Weekly report</button>
               </div>
             )}
           </div>
