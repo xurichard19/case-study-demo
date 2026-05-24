@@ -15,6 +15,7 @@ type DashboardProps = {
   onLogout: () => void
   onSelectHome: () => void
   onSelectCurrent: () => void
+  onSelectDrivers: () => void
   onSelectPast: () => void
 }
 
@@ -31,8 +32,12 @@ function formatDate(value: string | null) {
   }).format(new Date(value))
 }
 
+function isUnassignedOrder(order: ApiOrder) {
+  return !order.driver_id || order.driver_id.trim().toLowerCase() === 'unassigned'
+}
+
 function statusLabel(order: ApiOrder) {
-  if (!order.driver_id) {
+  if (isUnassignedOrder(order)) {
     return 'Unassigned'
   }
 
@@ -99,7 +104,7 @@ function sortCurrentOrders(orders: ApiOrder[]) {
   })
 }
 
-function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectPast }: DashboardProps) {
+function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectDrivers, onSelectPast }: DashboardProps) {
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [clients, setClients] = useState<ClientAccount[]>([])
   const [drivers, setDrivers] = useState<Driver[]>([])
@@ -146,6 +151,80 @@ function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectPast
   )
   const title = mode === 'current' ? 'Current orders' : 'Past orders'
   const hasNextPastPage = mode === 'past' && orders.length === PAST_PAGE_SIZE
+  const unassignedOrders = useMemo(
+    () => (mode === 'current' ? orders.filter(isUnassignedOrder) : []),
+    [mode, orders],
+  )
+  const assignedOrders = useMemo(
+    () => (mode === 'current' ? orders.filter((order) => !isUnassignedOrder(order)) : orders),
+    [mode, orders],
+  )
+
+  function renderOrdersTable(tableOrders: ApiOrder[], showDriverAssignment = false) {
+    return (
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Client</th>
+              <th>Service</th>
+              <th>Driver</th>
+              <th>Route</th>
+              <th>ETA</th>
+              <th>Status</th>
+              <th>Exception</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tableOrders.map((order) => {
+              const orderStatus = statusLabel(order)
+
+              return (
+                <tr key={order.id}>
+                  <td>
+                    <strong>{order.id}</strong>
+                    <span>{formatDate(order.order_time)}</span>
+                  </td>
+                  <td>{order.client_name}</td>
+                  <td>{order.service_type ?? 'Unknown'}</td>
+                  <td>
+                    {showDriverAssignment ? (
+                      <select className="driver-select" aria-label={`Assign driver for ${order.id}`} defaultValue="">
+                        <option value="">Select driver</option>
+                        {drivers.map((driver) => (
+                          <option key={driver.id} value={driver.id}>
+                            {driver.display_name ?? driver.id}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      (order.driver_id ?? 'Unassigned')
+                    )}
+                  </td>
+                  <td>
+                    {order.pickup_zip ?? '----'} {'->'} {order.delivery_zip ?? '----'}
+                  </td>
+                  <td>{formatDate(order.promised_eta)}</td>
+                  <td>
+                    <span className={`status-pill ${orderStatus.toLowerCase().replace(' ', '-')}`}>
+                      {orderStatus}
+                    </span>
+                  </td>
+                  <td>
+                    <strong className={`severity ${order.severity.replace(' ', '-')}`}>
+                      {severityLabels[order.severity]}
+                    </strong>
+                    <span>{order.exception_notes ?? 'None logged'}</span>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
 
   return (
     <main className="dashboard-page">
@@ -180,6 +259,9 @@ function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectPast
                 </button>
                 <button type="button" onClick={onSelectPast}>
                   Past orders
+                </button>
+                <button type="button" onClick={onSelectDrivers}>
+                  Drivers
                 </button>
               </div>
             )}
@@ -237,56 +319,35 @@ function Dashboard({ mode, onLogout, onSelectHome, onSelectCurrent, onSelectPast
         {isLoading && <p className="state-message">Loading dispatch data...</p>}
         {error && <p className="state-message error-message">{error}</p>}
 
-        {!isLoading && !error && (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Order</th>
-                  <th>Client</th>
-                  <th>Service</th>
-                  <th>Driver</th>
-                  <th>Route</th>
-                  <th>ETA</th>
-                  <th>Status</th>
-                  <th>Exception</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((order) => {
-                  const orderStatus = statusLabel(order)
+        {!isLoading && !error && mode === 'current' && (
+          <div className="order-table-stack">
+            <section className="split-orders-section" aria-labelledby="unassigned-orders-title">
+              <div className="section-heading compact-heading">
+                <div>
+                  <h3 id="unassigned-orders-title">Unassigned orders</h3>
+                  <p>{unassignedOrders.length} orders need driver assignment</p>
+                </div>
+              </div>
+              {unassignedOrders.length > 0 ? (
+                renderOrdersTable(unassignedOrders, true)
+              ) : (
+                <p className="state-message">No unassigned orders in the current queue.</p>
+              )}
+            </section>
 
-                  return (
-                    <tr key={order.id}>
-                      <td>
-                        <strong>{order.id}</strong>
-                        <span>{formatDate(order.order_time)}</span>
-                      </td>
-                      <td>{order.client_name}</td>
-                      <td>{order.service_type ?? 'Unknown'}</td>
-                      <td>{order.driver_id ?? 'Unassigned'}</td>
-                      <td>
-                        {order.pickup_zip ?? '----'} {'->'} {order.delivery_zip ?? '----'}
-                      </td>
-                      <td>{formatDate(order.promised_eta)}</td>
-                      <td>
-                        <span className={`status-pill ${orderStatus.toLowerCase().replace(' ', '-')}`}>
-                          {orderStatus}
-                        </span>
-                      </td>
-                      <td>
-                        <strong className={`severity ${order.severity.replace(' ', '-')}`}>
-                          {severityLabels[order.severity]}
-                        </strong>
-                        <span>{order.exception_notes ?? 'None logged'}</span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+            <section className="split-orders-section" aria-labelledby="assigned-orders-title">
+              <div className="section-heading compact-heading">
+                <div>
+                  <h3 id="assigned-orders-title">Assigned current orders</h3>
+                  <p>{assignedOrders.length} orders ranked by severity and dispatch priority</p>
+                </div>
+              </div>
+              {renderOrdersTable(assignedOrders)}
+            </section>
           </div>
         )}
+
+        {!isLoading && !error && mode === 'past' && renderOrdersTable(assignedOrders)}
       </section>
     </main>
   )

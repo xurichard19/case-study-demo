@@ -18,6 +18,20 @@ class Driver(BaseModel):
     active: bool = True
 
 
+class DriverMetrics(BaseModel):
+    id: str
+    display_name: str | None = None
+    active: bool = True
+    total_orders: int
+    current_order_count: int
+    exception_count: int
+    tardy_count: int
+    exception_rate: float
+    tardiness_rate: float
+    unacceptable_metrics: bool
+    status: str
+
+
 class Order(BaseModel):
     id: str
     client_account_id: UUID

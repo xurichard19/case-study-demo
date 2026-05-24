@@ -2,8 +2,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { getClients, getOrders, type ApiOrder, type ClientAccount } from './api'
 
 type ClientPortalProps = {
+  mode: 'current' | 'past'
   onLogout: () => void
+  onSelectCurrent: () => void
+  onSelectPast: () => void
 }
+
+const CLIENT_DEMO_DATE_KEY = '2025-03-31'
+const CLIENT_DEMO_DATE = new Date(`${CLIENT_DEMO_DATE_KEY}T00:00:00`)
+const CLIENT_DEMO_DATE_LABEL = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+}).format(CLIENT_DEMO_DATE)
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -34,12 +45,37 @@ function clientStatus(order: ApiOrder) {
   return 'Processing'
 }
 
-function ClientPortal({ onLogout }: ClientPortalProps) {
+function progressPercent(order: ApiOrder) {
+  if (order.delivery_time) return 100
+  if (order.pickup_time) return 68
+  if (order.dispatch_time || order.driver_id) return 42
+  return 16
+}
+
+function clientOrderDate(order: ApiOrder) {
+  return order.delivery_time ?? order.promised_eta ?? order.order_time
+}
+
+function dateKey(value: string | null) {
+  return value?.slice(0, 10) ?? null
+}
+
+function isCurrentClientOrder(order: ApiOrder) {
+  const orderDateKey = dateKey(clientOrderDate(order))
+  if (!orderDateKey) {
+    return true
+  }
+
+  return orderDateKey >= CLIENT_DEMO_DATE_KEY
+}
+
+function ClientPortal({ mode, onLogout, onSelectCurrent, onSelectPast }: ClientPortalProps) {
   const [clients, setClients] = useState<ClientAccount[]>([])
   const [selectedClientId, setSelectedClientId] = useState<string>('')
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     async function loadClients() {
@@ -66,7 +102,15 @@ function ClientPortal({ onLogout }: ClientPortalProps) {
 
       try {
         setIsLoading(true)
-        setOrders(await getOrders({ clientAccountId: selectedClientId }))
+        const clientOrders = await getOrders({
+          clientAccountId: selectedClientId,
+          limit: 1000,
+        })
+        setOrders(
+          clientOrders.filter((order) =>
+            mode === 'current' ? isCurrentClientOrder(order) : !isCurrentClientOrder(order),
+          ),
+        )
         setError(null)
       } catch (requestError) {
         setError(requestError instanceof Error ? requestError.message : 'Unable to load orders')
@@ -76,7 +120,7 @@ function ClientPortal({ onLogout }: ClientPortalProps) {
     }
 
     loadOrders()
-  }, [selectedClientId])
+  }, [mode, selectedClientId])
 
   const attentionCount = useMemo(
     () => orders.filter((order) => clientStatus(order) === 'Attention needed').length,
@@ -86,6 +130,7 @@ function ClientPortal({ onLogout }: ClientPortalProps) {
     () => orders.filter((order) => clientStatus(order) !== 'Attention needed').length,
     [orders],
   )
+  const title = mode === 'current' ? 'Current order statuses' : 'Past order statuses'
 
   return (
     <main className="dashboard-page">
@@ -98,21 +143,40 @@ function ClientPortal({ onLogout }: ClientPortalProps) {
           <button type="button" className="logout-button" onClick={onLogout}>
             Log out
           </button>
-          <button type="button" className="menu-button" aria-label="Open menu">
-            <span />
-            <span />
-            <span />
-          </button>
+          <div className="dashboard-menu">
+            <button
+              type="button"
+              className="menu-button"
+              aria-expanded={isMenuOpen}
+              aria-label="Open menu"
+              onClick={() => setIsMenuOpen((open) => !open)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+            {isMenuOpen && (
+              <div className="menu-popover" aria-label="Client pages">
+                <button type="button" onClick={onSelectCurrent}>
+                  Current orders
+                </button>
+                <button type="button" onClick={onSelectPast}>
+                  Past orders
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
       <section className="dashboard-header client-header" aria-labelledby="client-portal-title">
         <div>
-          <p className="eyebrow">Client portal</p>
-          <h1 id="client-portal-title">Your order statuses</h1>
+          <p className="eyebrow">Client portal · Demo date: {CLIENT_DEMO_DATE_LABEL}</p>
+          <h1 id="client-portal-title">{title}</h1>
           <p>
-            A client-only view for checking active deliveries, recent updates,
-            and current ETA details.
+            {mode === 'current'
+              ? 'Orders on or after the client demo date, with active status and ETA details.'
+              : 'Orders before the client demo date for reviewing previous delivery activity.'}
           </p>
         </div>
         <div className="summary-grid" aria-label="Client order summary">
@@ -134,7 +198,7 @@ function ClientPortal({ onLogout }: ClientPortalProps) {
       <section className="orders-section" aria-labelledby="client-orders-title">
         <div className="section-heading">
           <div>
-            <h2 id="client-orders-title">Visible orders</h2>
+            <h2 id="client-orders-title">{mode === 'current' ? 'Current orders' : 'Past orders'}</h2>
             <p>Showing a selectable client account until auth scoping is wired.</p>
           </div>
           <select
@@ -168,6 +232,12 @@ function ClientPortal({ onLogout }: ClientPortalProps) {
                   <span className={`status-pill ${status === 'Attention needed' ? 'at-risk' : 'on-time'}`}>
                     {status}
                   </span>
+                  <div className="order-progress" aria-label={`${order.id} progress`}>
+                    <div>
+                      <span style={{ width: `${progressPercent(order)}%` }} />
+                    </div>
+                    <p>{progressPercent(order)}% complete</p>
+                  </div>
                   <dl>
                     <div>
                       <dt>Service</dt>

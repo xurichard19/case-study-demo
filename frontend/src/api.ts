@@ -12,6 +12,17 @@ export type Driver = {
   active: boolean
 }
 
+export type DriverMetrics = Driver & {
+  total_orders: number
+  current_order_count: number
+  exception_count: number
+  tardy_count: number
+  exception_rate: number
+  tardiness_rate: number
+  unacceptable_metrics: boolean
+  status: string
+}
+
 export type ApiOrder = {
   id: string
   client_account_id: string
@@ -80,6 +91,10 @@ export function getClients() {
 
 export function getDrivers() {
   return getJson<Driver[]>('/api/drivers')
+}
+
+export function getDriverMetrics() {
+  return getJson<DriverMetrics[]>('/api/drivers/metrics')
 }
 
 export function getDailyReport() {

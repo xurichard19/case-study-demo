@@ -501,7 +501,8 @@
   font-size: 14px;
 }
 
-.client-select {
+.client-select,
+.driver-select {
   min-height: 42px;
   padding: 0 12px;
   border: 1px solid var(--border);
@@ -510,6 +511,11 @@
   background: var(--bg);
   font: inherit;
   font-size: 14px;
+}
+
+.driver-select {
+  width: 100%;
+  min-width: 150px;
 }
 
 .state-message {
@@ -522,6 +528,26 @@
 .error-message {
   color: #b91c1c;
   background: rgba(239, 68, 68, 0.1);
+}
+
+.order-table-stack {
+  display: grid;
+  gap: 28px;
+}
+
+.split-orders-section {
+  display: grid;
+  gap: 12px;
+}
+
+.compact-heading {
+  margin-bottom: 0;
+}
+
+.compact-heading h3 {
+  margin: 0;
+  color: var(--text-h);
+  font-size: 20px;
 }
 
 .briefing-layout {
@@ -673,6 +699,14 @@ td span {
   background: rgba(59, 130, 246, 0.14);
 }
 
+.metric-alert-row {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.metric-alert {
+  color: #dc2626;
+}
+
 .client-order-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -703,6 +737,32 @@ td span {
 .client-order-card p {
   color: var(--text);
   font-size: 14px;
+}
+
+.order-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.order-progress > div {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--accent-bg);
+}
+
+.order-progress > div span {
+  display: block;
+  height: 100%;
+  margin: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, var(--accent));
+}
+
+.order-progress p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .client-order-card dl {

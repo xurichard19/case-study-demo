@@ -21,6 +21,26 @@ DELAY_WEIGHT = 0.10
 SEVERITY_ONE_THRESHOLD = 70
 SEVERITY_TWO_THRESHOLD = 35
 
+CLIENT_NAME_ALIASES = {
+    "boston med ctr": "Boston Medical Center",
+    "boston medical center": "Boston Medical Center",
+    "brigham & women's": "Brigham and Womens",
+    "brigham and womens": "Brigham and Womens",
+    "children's hospital": "Childrens Hospital",
+    "childrens hospital": "Childrens Hospital",
+    "labcorp": "Labcorp Inc",
+    "labcorp inc": "Labcorp Inc",
+    "mgh": "Mass General Hospital",
+    "mass general hospital": "Mass General Hospital",
+    "ne labs": "Northeast Labs",
+    "northeast laboratory": "Northeast Labs",
+    "northeast labs": "Northeast Labs",
+    "quest diag": "Quest Diagnostics",
+    "quest diagnostics": "Quest Diagnostics",
+    "tufts med center": "Tufts Medical",
+    "tufts medical": "Tufts Medical",
+}
+
 
 def parse_datetime(value: str) -> str | None:
     if not value:
@@ -73,6 +93,11 @@ def normalize_exception_note(value: str | None) -> str | None:
     return note or None
 
 
+def canonical_client_name(value: str) -> str:
+    name = value.strip()
+    return CLIENT_NAME_ALIASES.get(name.lower(), name)
+
+
 def service_priority_score(service_type: str | None) -> int:
     service = (service_type or "").lower()
     if "stat" in service:
@@ -120,8 +145,16 @@ def main() -> None:
     with CSV_PATH.open(newline="") as csv_file:
         rows = list(csv.DictReader(csv_file))
 
-    client_names = sorted({row["client_name"].strip() for row in rows if row.get("client_name")})
-    driver_ids = sorted({row["driver_id"].strip() for row in rows if row.get("driver_id")})
+    client_names = sorted(
+        {canonical_client_name(row["client_name"]) for row in rows if row.get("client_name")}
+    )
+    driver_ids = sorted(
+        {
+            row["driver_id"].strip()
+            for row in rows
+            if row.get("driver_id") and row["driver_id"].strip().lower() != "unassigned"
+        }
+    )
 
     if client_names:
         supabase.table("client_accounts").upsert(
@@ -167,7 +200,7 @@ def main() -> None:
 
     orders = []
     for row in rows:
-        client_account_id = client_ids_by_name.get(row["client_name"].strip())
+        client_account_id = client_ids_by_name.get(canonical_client_name(row["client_name"]))
         if not client_account_id:
             continue
 

@@ -5,6 +5,7 @@ import ClientPortal from './ClientPortal'
 import Dashboard from './Dashboard'
 import DispatcherHome from './DispatcherHome'
 import DispatcherLogin from './DispatcherLogin'
+import DriversPage from './DriversPage'
 import Home from './Home'
 
 type View =
@@ -14,7 +15,9 @@ type View =
   | 'dispatcher-home'
   | 'dispatcher-dashboard'
   | 'dispatcher-past-orders'
+  | 'dispatcher-drivers'
   | 'client-portal'
+  | 'client-past-orders'
 
 const viewPaths: Record<View, string> = {
   home: '/',
@@ -23,7 +26,9 @@ const viewPaths: Record<View, string> = {
   'dispatcher-home': '/dispatcher',
   'dispatcher-dashboard': '/dispatcher/current-orders',
   'dispatcher-past-orders': '/dispatcher/past-orders',
+  'dispatcher-drivers': '/dispatcher/drivers',
   'client-portal': '/client/orders',
+  'client-past-orders': '/client/past-orders',
 }
 
 function getViewFromPath(pathname: string): View {
@@ -58,6 +63,18 @@ function App() {
       <DispatcherHome
         onLogout={() => navigate('home')}
         onSelectCurrent={() => navigate('dispatcher-dashboard')}
+        onSelectDrivers={() => navigate('dispatcher-drivers')}
+        onSelectPast={() => navigate('dispatcher-past-orders')}
+      />
+    )
+  }
+
+  if (view === 'dispatcher-drivers') {
+    return (
+      <DriversPage
+        onLogout={() => navigate('home')}
+        onSelectHome={() => navigate('dispatcher-home')}
+        onSelectCurrent={() => navigate('dispatcher-dashboard')}
         onSelectPast={() => navigate('dispatcher-past-orders')}
       />
     )
@@ -70,6 +87,7 @@ function App() {
         onLogout={() => navigate('home')}
         onSelectHome={() => navigate('dispatcher-home')}
         onSelectCurrent={() => navigate('dispatcher-dashboard')}
+        onSelectDrivers={() => navigate('dispatcher-drivers')}
         onSelectPast={() => navigate('dispatcher-past-orders')}
       />
     )
@@ -82,6 +100,7 @@ function App() {
         onLogout={() => navigate('home')}
         onSelectHome={() => navigate('dispatcher-home')}
         onSelectCurrent={() => navigate('dispatcher-dashboard')}
+        onSelectDrivers={() => navigate('dispatcher-drivers')}
         onSelectPast={() => navigate('dispatcher-past-orders')}
       />
     )
@@ -108,7 +127,25 @@ function App() {
   }
 
   if (view === 'client-portal') {
-    return <ClientPortal onLogout={() => navigate('home')} />
+    return (
+      <ClientPortal
+        mode="current"
+        onLogout={() => navigate('home')}
+        onSelectCurrent={() => navigate('client-portal')}
+        onSelectPast={() => navigate('client-past-orders')}
+      />
+    )
+  }
+
+  if (view === 'client-past-orders') {
+    return (
+      <ClientPortal
+        mode="past"
+        onLogout={() => navigate('home')}
+        onSelectCurrent={() => navigate('client-portal')}
+        onSelectPast={() => navigate('client-past-orders')}
+      />
+    )
   }
 
   return (

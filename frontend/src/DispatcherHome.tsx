@@ -4,6 +4,7 @@ import { getDailyReport, type DailyReport } from './api'
 type DispatcherHomeProps = {
   onLogout: () => void
   onSelectCurrent: () => void
+  onSelectDrivers: () => void
   onSelectPast: () => void
 }
 
@@ -16,7 +17,7 @@ function formatDate(value: string) {
   }).format(new Date(value))
 }
 
-function DispatcherHome({ onLogout, onSelectCurrent, onSelectPast }: DispatcherHomeProps) {
+function DispatcherHome({ onLogout, onSelectCurrent, onSelectDrivers, onSelectPast }: DispatcherHomeProps) {
   const [report, setReport] = useState<DailyReport | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -75,6 +76,7 @@ function DispatcherHome({ onLogout, onSelectCurrent, onSelectPast }: DispatcherH
                 <button type="button">Daily briefing</button>
                 <button type="button" onClick={onSelectCurrent}>Current orders</button>
                 <button type="button" onClick={onSelectPast}>Past orders</button>
+                <button type="button" onClick={onSelectDrivers}>Drivers</button>
               </div>
             )}
           </div>
