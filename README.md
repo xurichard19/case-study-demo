@@ -65,3 +65,12 @@ https://github.com/user-attachments/assets/ce69411b-faed-467e-9695-e82997c81b71
 
 ---
 
+### Implementation Details
+
+Our frontend stays intentionally thin while we handle most of the analytics in the backend. I calculated exception severity by first using an LLM to score the note then combining this score with service priority and delay time into a weighted equation to produce a final severity score. I then sorted each order into exception tiers with score thresholds. This way, we can minimize our token size when it comes to API calls and keep the bulk of the logic in our code.
+
+Driver availability and flagging are computed in the backend. The dispatcher drivers page separates drivers currently delivering orders as of the demo date from drivers who are unavailable or need review. Driver metrics use exception rate and tardiness rate and we flag drivers with poor performance.
+
+The daily briefing page makes one weather/traffic report per Boston business day and stores it in Supabase until the next report window. We pull weather data from the Open-Meteo API and traffic data from the TomTom API and combine these into a natural language summary with GPT40 mini (our demo harness).
+
+Although I could not fully implement driver matching with the provided data, I do have ideas surrounding how we could build out an improved suggestion algorithm. A potential solution is to calculate driver performance (tardiness/exception rate) with each individual client and provide those statistics as context to GPT to make matchings at its own discretion. We could have Sam share his insights on client specific performance for each driver to incorporate in the system prompt. GPT would rank the best drivers for the order, thus if one driver drops out we can simply suggest the next on the rank. This way, we keep our API calls to one per order.
