@@ -7,13 +7,19 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from postgrest.exceptions import APIError
 
-from severity_classifier import classify_severity
+from severity_classifier import rate_exception_note
 from supabase_client import get_supabase_client
 
 
 APP_CSV_PATH = Path(__file__).resolve().parents[1] / "dispatch_log_q1.csv"
 REPO_CSV_PATH = Path(__file__).resolve().parents[2] / "dispatch_log_q1.csv"
 CSV_PATH = APP_CSV_PATH if APP_CSV_PATH.exists() else REPO_CSV_PATH
+
+NOTE_WEIGHT = 0.70
+SERVICE_WEIGHT = 0.20
+DELAY_WEIGHT = 0.10
+SEVERITY_ONE_THRESHOLD = 70
+SEVERITY_TWO_THRESHOLD = 35
 
 
 def parse_datetime(value: str) -> str | None:
@@ -62,6 +68,40 @@ def delay_minutes(row: dict[str, str]) -> int | None:
     return max(0, int(delay.total_seconds() // 60))
 
 
+def normalize_exception_note(value: str | None) -> str | None:
+    note = (value or "").strip()
+    return note or None
+
+
+def service_priority_score(service_type: str | None) -> int:
+    service = (service_type or "").lower()
+    if "stat" in service:
+        return 100
+    if "rush" in service:
+        return 60
+    return 0
+
+
+def delay_score(delay_time: int | None) -> int:
+    if delay_time is None:
+        return 0
+    return min(100, int((delay_time / 120) * 100))
+
+
+def severity_label(note_score: int, service_type: str | None, delay_time: int | None) -> str:
+    weighted_score = (
+        (note_score * 10 * NOTE_WEIGHT)
+        + (service_priority_score(service_type) * SERVICE_WEIGHT)
+        + (delay_score(delay_time) * DELAY_WEIGHT)
+    )
+
+    if weighted_score >= SEVERITY_ONE_THRESHOLD:
+        return "severity one"
+    if weighted_score >= SEVERITY_TWO_THRESHOLD:
+        return "severity two"
+    return "severity three"
+
+
 def order_status(row: dict[str, str]) -> str:
     if not row.get("driver_id"):
         return "pending"
@@ -98,24 +138,44 @@ def main() -> None:
     clients_response = supabase.table("client_accounts").select("id,name").execute()
     client_ids_by_name = {client["name"]: client["id"] for client in clients_response.data}
 
+    existing_notes_response = supabase.table("exception_notes").select("id,note,severity_score").execute()
+    notes_by_text = {note["note"]: note for note in existing_notes_response.data}
+    unique_exception_notes = sorted(
+        {
+            note
+            for note in (normalize_exception_note(row.get("exception_notes")) for row in rows)
+            if note
+        }
+    )
+    new_exception_notes = [note for note in unique_exception_notes if note not in notes_by_text]
+
+    if new_exception_notes:
+        note_rows = []
+        for index, note in enumerate(new_exception_notes, start=1):
+            score = rate_exception_note(note)
+            note_rows.append({"note": note, "severity_score": score})
+            print(f"Classified exception note {index}/{len(new_exception_notes)}: {score}/10")
+
+        for start in range(0, len(note_rows), 500):
+            supabase.table("exception_notes").upsert(
+                note_rows[start : start + 500],
+                on_conflict="note",
+            ).execute()
+
+        existing_notes_response = supabase.table("exception_notes").select("id,note,severity_score").execute()
+        notes_by_text = {note["note"]: note for note in existing_notes_response.data}
+
     orders = []
-    severity_cache: dict[tuple[str | None, str | None, int | None], str] = {}
     for row in rows:
         client_account_id = client_ids_by_name.get(row["client_name"].strip())
         if not client_account_id:
             continue
 
         service_type = row["service_type"].upper() if row["service_type"] else None
-        exception_notes = row["exception_notes"] or None
+        exception_notes = normalize_exception_note(row.get("exception_notes"))
+        exception_note = notes_by_text.get(exception_notes) if exception_notes else None
+        note_score = exception_note["severity_score"] if exception_note else 1
         delay_time = delay_minutes(row)
-        severity_key = (exception_notes, service_type, delay_time)
-
-        if severity_key not in severity_cache:
-            severity_cache[severity_key] = classify_severity(
-                exception_notes,
-                service_type,
-                delay_time,
-            )
 
         orders.append(
             {
@@ -132,10 +192,11 @@ def main() -> None:
                 "promised_eta": parse_datetime(row["promised_eta"]),
                 "on_time": parse_bool(row["on_time"]),
                 "exception_notes": exception_notes,
+                "exception_note_id": exception_note["id"] if exception_note else None,
                 "driver_idle_min": parse_int(row["driver_idle_min"]),
                 "fuel_cost_usd": parse_float(row["fuel_cost_usd"]),
                 "redelivery_flag": parse_bool(row["redelivery_flag"]) or False,
-                "severity": severity_cache[severity_key],
+                "severity": severity_label(note_score, service_type, delay_time),
                 "status": order_status(row),
             }
         )
@@ -149,7 +210,8 @@ def main() -> None:
     print(
         f"Seeded {len(client_names)} clients, {len(driver_ids)} drivers, and {len(orders)} orders."
     )
-    print(f"Classified {len(severity_cache)} unique severity contexts.")
+    print(f"Stored {len(unique_exception_notes)} unique exception notes.")
+    print(f"Classified {len(new_exception_notes)} new exception notes.")
 
 
 if __name__ == "__main__":

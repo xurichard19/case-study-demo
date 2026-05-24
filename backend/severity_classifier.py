@@ -4,29 +4,20 @@ from functools import lru_cache
 from openai import OpenAI
 
 
-SEVERITIES = ("severity one", "severity two", "severity three")
-
 SYSTEM_PROMPT = """
-You classify medical delivery exception severity for a dispatch operations system.
+You rate medical delivery exception notes for a dispatch operations system.
 
-You must return exactly one of these labels:
-- severity one
-- severity two
-- severity three
+Return a single integer from 1 to 10.
 
 Definitions:
-- severity one: urgent action needed. Use for safety, specimen integrity, missed/failed delivery,
-  redelivery risk, serious reassignment risk, major service failure, or urgent exception notes.
-- severity two: review later. Use when there is a meaningful operational issue that should be
-  reviewed, but does not require immediate action.
-- severity three: just log. Use for routine notes, no exception, minor delays, or informational notes.
+- 10 means the note requires the most urgent action.
+- 1 means the note is only a log/no-action item.
 
-Weighting:
-1. Urgent exception note content is most important.
-2. Service priority is next; STAT is high priority and raises severity when paired with an issue.
-3. Delay time is least important and should not override urgent note content.
+Rate only the exception note content. Do not consider service type, delay time, or any other
+context. High scores should be used for safety concerns, specimen integrity risk, failed delivery,
+redelivery risk, serious reassignment risk, or major service failure.
 
-Return only one label. Do not include punctuation, explanation, JSON, or extra text.
+Return only the integer. Do not include punctuation, explanation, JSON, or extra text.
 """.strip()
 
 
@@ -39,36 +30,24 @@ def get_openai_client() -> OpenAI:
     return OpenAI(api_key=api_key)
 
 
-def build_user_prompt(exception_note: str | None, service: str | None, delay_minutes: int | None) -> str:
-    return "\n".join(
-        [
-            f"exception note: {exception_note or 'none'}",
-            f"service: {service or 'unknown'}",
-            f"delay time: {delay_minutes if delay_minutes is not None else 'unknown'} minutes",
-        ]
-    )
-
-
-def classify_severity(
-    exception_note: str | None,
-    service: str | None,
-    delay_minutes: int | None,
-) -> str:
+def rate_exception_note(exception_note: str) -> int:
     response = get_openai_client().chat.completions.create(
         model="gpt-4o-mini",
         temperature=0,
-        max_tokens=8,
+        max_tokens=3,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": build_user_prompt(exception_note, service, delay_minutes),
-            },
+            {"role": "user", "content": f"exception note: {exception_note}"},
         ],
     )
-    severity = (response.choices[0].message.content or "").strip().lower()
+    score_text = (response.choices[0].message.content or "").strip()
 
-    if severity not in SEVERITIES:
-        raise ValueError(f"Unexpected severity label from model: {severity!r}")
+    try:
+        score = int(score_text)
+    except ValueError as error:
+        raise ValueError(f"Unexpected severity score from model: {score_text!r}") from error
 
-    return severity
+    if score < 1 or score > 10:
+        raise ValueError(f"Unexpected severity score from model: {score!r}")
+
+    return score

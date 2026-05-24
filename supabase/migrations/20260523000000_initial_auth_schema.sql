@@ -1,5 +1,20 @@
 create extension if not exists pgcrypto;
 
+drop trigger if exists on_auth_user_created on auth.users;
+drop table if exists public.orders cascade;
+drop table if exists public.exception_notes cascade;
+drop table if exists public.client_account_users cascade;
+drop table if exists public.drivers cascade;
+drop table if exists public.client_accounts cascade;
+drop table if exists public.profiles cascade;
+drop function if exists public.prevent_client_role_change() cascade;
+drop function if exists public.handle_new_user() cascade;
+drop function if exists public.user_can_access_client_account(uuid) cascade;
+drop function if exists public.is_dispatcher() cascade;
+drop function if exists public.current_user_role() cascade;
+drop function if exists public.set_updated_at() cascade;
+drop type if exists public.app_role cascade;
+
 create type public.app_role as enum ('dispatcher', 'client');
 
 create table public.profiles (
@@ -34,6 +49,17 @@ create table public.drivers (
   updated_at timestamptz not null default now()
 );
 
+create table public.exception_notes (
+  id uuid primary key default gen_random_uuid(),
+  note text not null unique,
+  severity_score integer not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint exception_notes_severity_score_check check (
+    severity_score between 1 and 10
+  )
+);
+
 create table public.orders (
   id text primary key,
   client_account_id uuid not null references public.client_accounts (id),
@@ -48,6 +74,7 @@ create table public.orders (
   promised_eta timestamptz,
   on_time boolean,
   exception_notes text,
+  exception_note_id uuid references public.exception_notes (id),
   driver_idle_min integer,
   fuel_cost_usd numeric(10, 2),
   redelivery_flag boolean not null default false,
@@ -75,6 +102,9 @@ create index orders_status_idx
 create index orders_severity_idx
   on public.orders (severity);
 
+create index orders_exception_note_id_idx
+  on public.orders (exception_note_id);
+
 create index drivers_active_idx
   on public.drivers (active);
 
@@ -98,6 +128,10 @@ for each row execute function public.set_updated_at();
 
 create trigger orders_set_updated_at
 before update on public.orders
+for each row execute function public.set_updated_at();
+
+create trigger exception_notes_set_updated_at
+before update on public.exception_notes
 for each row execute function public.set_updated_at();
 
 create trigger drivers_set_updated_at
@@ -185,6 +219,7 @@ alter table public.profiles enable row level security;
 alter table public.client_accounts enable row level security;
 alter table public.client_account_users enable row level security;
 alter table public.drivers enable row level security;
+alter table public.exception_notes enable row level security;
 alter table public.orders enable row level security;
 
 grant usage on schema public to authenticated;
@@ -192,6 +227,7 @@ grant all on public.profiles to authenticated;
 grant all on public.client_accounts to authenticated;
 grant all on public.client_account_users to authenticated;
 grant all on public.drivers to authenticated;
+grant all on public.exception_notes to authenticated;
 grant all on public.orders to authenticated;
 
 create policy "Users can read their own profile"
@@ -251,6 +287,19 @@ using (public.is_dispatcher());
 
 create policy "Dispatchers can manage drivers"
 on public.drivers
+for all
+to authenticated
+using (public.is_dispatcher())
+with check (public.is_dispatcher());
+
+create policy "Dispatchers can read exception notes"
+on public.exception_notes
+for select
+to authenticated
+using (public.is_dispatcher());
+
+create policy "Dispatchers can manage exception notes"
+on public.exception_notes
 for all
 to authenticated
 using (public.is_dispatcher())

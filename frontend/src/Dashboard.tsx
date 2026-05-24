@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getClients, getDrivers, getOrders, type ApiOrder, type ClientAccount, type Driver } from './api'
 
-const DEMO_DATE = new Date('2025-03-25T00:00:00')
+const DEMO_DATE = new Date('2025-03-31T00:00:00')
 const DEMO_DATE_PARAM = DEMO_DATE.toISOString()
 const DEMO_DATE_LABEL = new Intl.DateTimeFormat(undefined, {
   month: 'short',
