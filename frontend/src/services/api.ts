@@ -110,10 +110,6 @@ export function getClients() {
   return getJson<ClientAccount[]>('/api/clients')
 }
 
-export function getDrivers() {
-  return getJson<Driver[]>('/api/drivers')
-}
-
 export function getDriverMetrics() {
   return getJson<DriverMetrics[]>('/api/drivers/metrics')
 }

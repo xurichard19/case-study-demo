@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import DispatcherNav from '../components/DispatcherNav'
 import { getDriverMetrics, type DriverMetrics } from '../services/api'
 
 type DriversPageProps = {
@@ -23,7 +24,6 @@ function DriversPage({
   const [drivers, setDrivers] = useState<DriverMetrics[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     async function loadDrivers() {
@@ -100,38 +100,15 @@ function DriversPage({
 
   return (
     <main className="dashboard-page">
-      <nav className="top-nav dashboard-nav" aria-label="Dispatcher navigation">
-        <a className="brand" href="/" aria-label="Case Study home">
-          <span className="brand-mark" aria-hidden="true">CS</span>
-          <span>Dispatch Portal</span>
-        </a>
-        <div className="dashboard-actions">
-          <button type="button" className="logout-button" onClick={onLogout}>
-            Log out
-          </button>
-          <div className="dashboard-menu" onMouseLeave={() => setIsMenuOpen(false)}>
-            <button
-              type="button"
-              className="menu-button"
-              aria-expanded={isMenuOpen}
-              aria-label="Open menu"
-              onClick={() => setIsMenuOpen((open) => !open)}
-            >
-              <span />
-              <span />
-              <span />
-            </button>
-            {isMenuOpen && (
-              <div className="menu-popover" aria-label="Dispatcher pages">
-                <button type="button" onClick={onSelectHome}>Daily briefing</button>
-                <button type="button" onClick={onSelectCurrent}>Current orders</button>
-                <button type="button" onClick={onSelectPast}>Past orders</button>
-                <button type="button" onClick={onSelectWeeklyReport}>Weekly report</button>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+      <DispatcherNav
+        activePage="drivers"
+        onLogout={onLogout}
+        onSelectCurrent={onSelectCurrent}
+        onSelectDrivers={() => undefined}
+        onSelectHome={onSelectHome}
+        onSelectPast={onSelectPast}
+        onSelectWeeklyReport={onSelectWeeklyReport}
+      />
 
       <section className="dashboard-header" aria-labelledby="drivers-title">
         <div>

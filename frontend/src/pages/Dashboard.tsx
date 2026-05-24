@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import DispatcherNav from '../components/DispatcherNav'
 import { getClients, getDriverMetrics, getOrders, type ApiOrder, type ClientAccount, type DriverMetrics } from '../services/api'
 
 const DEMO_DATE = new Date('2025-03-31T00:00:00')
@@ -119,7 +120,6 @@ function Dashboard({
   const [drivers, setDrivers] = useState<DriverMetrics[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [pastPage, setPastPage] = useState(0)
 
   useEffect(() => {
@@ -244,49 +244,15 @@ function Dashboard({
 
   return (
     <main className="dashboard-page">
-      <nav className="top-nav dashboard-nav" aria-label="Dashboard navigation">
-        <a className="brand" href="/" aria-label="Case Study home">
-          <span className="brand-mark" aria-hidden="true">CS</span>
-          <span>Dispatch Portal</span>
-        </a>
-        <div className="dashboard-actions">
-          <button type="button" className="logout-button" onClick={onLogout}>
-            Log out
-          </button>
-          <div className="dashboard-menu" onMouseLeave={() => setIsMenuOpen(false)}>
-            <button
-              type="button"
-              className="menu-button"
-              aria-expanded={isMenuOpen}
-              aria-label="Open menu"
-              onClick={() => setIsMenuOpen((open) => !open)}
-            >
-              <span />
-              <span />
-              <span />
-            </button>
-            {isMenuOpen && (
-              <div className="menu-popover" aria-label="Dispatcher pages">
-                <button type="button" onClick={onSelectHome}>
-                  Daily briefing
-                </button>
-                <button type="button" onClick={onSelectCurrent}>
-                  Current orders
-                </button>
-                <button type="button" onClick={onSelectPast}>
-                  Past orders
-                </button>
-                <button type="button" onClick={onSelectDrivers}>
-                  Drivers
-                </button>
-                <button type="button" onClick={onSelectWeeklyReport}>
-                  Weekly report
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+      <DispatcherNav
+        activePage={mode === 'current' ? 'current' : 'past'}
+        onLogout={onLogout}
+        onSelectCurrent={onSelectCurrent}
+        onSelectDrivers={onSelectDrivers}
+        onSelectHome={onSelectHome}
+        onSelectPast={onSelectPast}
+        onSelectWeeklyReport={onSelectWeeklyReport}
+      />
 
       <section className="dashboard-header" aria-labelledby="dashboard-title">
         <div>

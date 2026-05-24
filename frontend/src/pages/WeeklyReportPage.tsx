@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import DispatcherNav from '../components/DispatcherNav'
 import MarkdownText from '../components/MarkdownText'
 import { getWeeklyReport, type MetricRow, type WeeklyReport } from '../services/api'
 
@@ -63,7 +64,6 @@ function WeeklyReportPage({
   const [report, setReport] = useState<WeeklyReport | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     async function loadReport() {
@@ -83,39 +83,15 @@ function WeeklyReportPage({
 
   return (
     <main className="dashboard-page">
-      <nav className="top-nav dashboard-nav" aria-label="Dispatcher navigation">
-        <a className="brand" href="/" aria-label="Case Study home">
-          <span className="brand-mark" aria-hidden="true">CS</span>
-          <span>Dispatch Portal</span>
-        </a>
-        <div className="dashboard-actions">
-          <button type="button" className="logout-button" onClick={onLogout}>
-            Log out
-          </button>
-          <div className="dashboard-menu" onMouseLeave={() => setIsMenuOpen(false)}>
-            <button
-              type="button"
-              className="menu-button"
-              aria-expanded={isMenuOpen}
-              aria-label="Open menu"
-              onClick={() => setIsMenuOpen((open) => !open)}
-            >
-              <span />
-              <span />
-              <span />
-            </button>
-            {isMenuOpen && (
-              <div className="menu-popover" aria-label="Dispatcher pages">
-                <button type="button" onClick={onSelectHome}>Daily briefing</button>
-                <button type="button" onClick={onSelectCurrent}>Current orders</button>
-                <button type="button" onClick={onSelectPast}>Past orders</button>
-                <button type="button" onClick={onSelectDrivers}>Drivers</button>
-                <button type="button">Weekly report</button>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+      <DispatcherNav
+        activePage="weekly"
+        onLogout={onLogout}
+        onSelectCurrent={onSelectCurrent}
+        onSelectDrivers={onSelectDrivers}
+        onSelectHome={onSelectHome}
+        onSelectPast={onSelectPast}
+        onSelectWeeklyReport={() => undefined}
+      />
 
       <section className="dashboard-header" aria-labelledby="weekly-report-title">
         <div>
